@@ -1,0 +1,226 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+
+import '../services/app_model.dart';
+
+class ConnectScreen extends StatelessWidget {
+  const ConnectScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final model = context.watch<AppModel>();
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('设备连接')),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _ConnectionStatus(model: model),
+          const SizedBox(height: 16),
+          _BleSection(model: model),
+          const SizedBox(height: 16),
+          if (model.bleConnected) _WifiSection(model: model),
+        ],
+      ),
+    );
+  }
+}
+
+class _ConnectionStatus extends StatelessWidget {
+  final AppModel model;
+  const _ConnectionStatus({required this.model});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Icon(Icons.link, color: model.isConnected ? Colors.green : Colors.grey),
+              const SizedBox(width: 8),
+              Text('通信链路: ${model.activeLink}'),
+            ]),
+            const SizedBox(height: 8),
+            _StatusChip(label: '蓝牙', active: model.bleConnected, icon: Icons.bluetooth),
+            const SizedBox(height: 4),
+            _StatusChip(label: 'WiFi', active: model.wifiConnected, icon: Icons.wifi),
+            if (model.deviceWifiConnected && model.deviceIP != null) ...[
+              const SizedBox(height: 8),
+              Text('设备 IP: ${model.deviceIP}', style: const TextStyle(fontFamily: 'monospace')),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  final String label;
+  final bool active;
+  final IconData icon;
+  const _StatusChip({required this.label, required this.active, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(children: [
+      Icon(icon, size: 18, color: active ? Colors.green : Colors.grey),
+      const SizedBox(width: 6),
+      Text(label),
+      const SizedBox(width: 8),
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        decoration: BoxDecoration(
+          color: active ? Colors.green.shade50 : Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: active ? Colors.green : Colors.grey.shade300),
+        ),
+        child: Text(active ? '已连接' : '未连接',
+            style: TextStyle(fontSize: 12, color: active ? Colors.green : Colors.grey)),
+      ),
+    ]);
+  }
+}
+
+class _BleSection extends StatelessWidget {
+  final AppModel model;
+  const _BleSection({required this.model});
+
+  @override
+  Widget build(BuildContext context) {
+    if (model.bleConnected) {
+      return Card(
+        child: ListTile(
+          leading: const Icon(Icons.bluetooth_connected, color: Colors.green),
+          title: const Text('esp 绕线器'),
+          subtitle: const Text('已连接，点击断开'),
+          trailing: TextButton(
+            onPressed: () => model.disconnect(),
+            child: const Text('断开'),
+          ),
+        ),
+      );
+    }
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Text('蓝牙设备', style: Theme.of(context).textTheme.titleMedium),
+              const Spacer(),
+              FilledButton.icon(
+                onPressed: model.scanning ? null : () => model.startScan(),
+                icon: model.scanning
+                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.search),
+                label: Text(model.scanning ? '搜索中...' : '搜索'),
+              ),
+            ]),
+            const SizedBox(height: 8),
+            if (model.scanResults.isEmpty && !model.scanning)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Center(child: Text('点击搜索查找设备', style: TextStyle(color: Colors.grey))),
+              ),
+            ...model.scanResults.map((d) => ListTile(
+                  leading: const Icon(Icons.bluetooth),
+                  title: Text(d.platformName),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => model.connectBle(d),
+                )),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _WifiSection extends StatefulWidget {
+  final AppModel model;
+  const _WifiSection({required this.model});
+  @override
+  State<_WifiSection> createState() => _WifiSectionState();
+}
+
+class _WifiSectionState extends State<_WifiSection> {
+  final _ssidCtrl = TextEditingController();
+  final _passCtrl = TextEditingController();
+  bool _obscure = true;
+
+  @override
+  void dispose() {
+    _ssidCtrl.dispose();
+    _passCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('WiFi 配网', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            if (widget.model.deviceWifiConnected)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(children: [
+                  const Icon(Icons.wifi, color: Colors.green, size: 18),
+                  const SizedBox(width: 6),
+                  Text('设备已联网: ${widget.model.deviceSSID}'),
+                  const Spacer(),
+                  Text(widget.model.deviceIP ?? '', style: const TextStyle(fontFamily: 'monospace')),
+                ]),
+              ),
+            TextField(
+              controller: _ssidCtrl,
+              decoration: const InputDecoration(labelText: 'WiFi 名称', border: OutlineInputBorder(), isDense: true),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _passCtrl,
+              obscureText: _obscure,
+              decoration: InputDecoration(
+                labelText: 'WiFi 密码',
+                border: const OutlineInputBorder(),
+                isDense: true,
+                suffixIcon: IconButton(
+                  icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
+                  onPressed: () => setState(() => _obscure = !_obscure),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(spacing: 8, children: [
+              FilledButton.icon(
+                onPressed: () => widget.model.sendSetWifi(_ssidCtrl.text, _passCtrl.text),
+                icon: const Icon(Icons.wifi_protected_setup),
+                label: const Text('发送配网'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => widget.model.sendGetWifiStatus(),
+                icon: const Icon(Icons.refresh),
+                label: const Text('查询状态'),
+              ),
+              if (widget.model.deviceIP != null)
+                OutlinedButton.icon(
+                  onPressed: () => widget.model.connectWifi(widget.model.deviceIP!),
+                  icon: const Icon(Icons.cable),
+                  label: const Text('连接 TCP'),
+                ),
+            ]),
+          ],
+        ),
+      ),
+    );
+  }
+}
