@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:io';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 import '../models/device_config.dart';
@@ -107,6 +108,53 @@ class AppModel extends ChangeNotifier {
   }
 
   String get activeLink => _comm.activeLink;
+
+  bool mdnsScanning = false;
+
+  // ===========================================================================
+  //  mDNS 局域网设备发现（无需提前知道 IP）
+  // ===========================================================================
+
+  Future<String?> discoverDevice({Duration timeout = const Duration(seconds: 4)}) async {
+    mdnsScanning = true;
+    notifyListeners();
+    try {
+      final socket = await RawDatagramSocket.bind('0.0.0.0', 8888);
+      socket.broadcastEnabled = true;
+      final result = socket.timeout(timeout, onTimeout: (sink) {
+        sink.close();
+      }).firstWhere(
+        (event) {
+          if (event == RawSocketEvent.read) {
+            final datagram = socket.receive();
+            if (datagram != null) {
+              final msg = String.fromCharCodes(datagram.data);
+              if (msg.startsWith('WINDER:')) {
+                return true;
+              }
+            }
+          }
+          return false;
+        },
+      );
+      await result;
+      final datagram = socket.receive();
+      socket.close();
+      mdnsScanning = false;
+      notifyListeners();
+      if (datagram != null) {
+        final msg = String.fromCharCodes(datagram.data);
+        // WINDER:192.168.1.105:8080
+        final parts = msg.split(':');
+        if (parts.length >= 2) return parts[1];
+      }
+    } catch (e) {
+      print('UDP 发现失败: $e');
+    }
+    mdnsScanning = false;
+    notifyListeners();
+    return null;
+  }
 
   // ===========================================================================
   //  本地持久化（保存配网后的设备 IP）

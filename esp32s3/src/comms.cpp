@@ -3,6 +3,7 @@
 #include "storage.h"
 #include "config.h"
 #include <WiFi.h>
+#include <WiFiUdp.h>
 
 Comms g_comms;
 
@@ -35,6 +36,8 @@ static WiFiServer* s_tcpServer = nullptr;
 static WiFiClient  s_tcpClient;
 static String      s_tcpBuffer;
 static bool        s_clientConnected = false;
+static WiFiUDP      s_broadcastUdp;
+static unsigned long s_lastBroadcastMs = 0;
 
 void Comms::begin() {
     WiFi.onEvent(onWiFiEvent);
@@ -79,6 +82,7 @@ bool Comms::wifiConnectSTA() {
         g_state.wifiConnected = true;
         g_state.wifiIP = ip.toString();
         g_state.wifiSSID = ssid;
+        s_broadcastUdp.begin(8888);
     } else {
         Serial.println("[WiFi] STA 失败，保持 AP 模式");
     }
@@ -149,6 +153,9 @@ void Comms::wifiConfigure(const String &ssid, const String &password) {
         if (s_tcpClient && s_tcpClient.connected()) {
             s_tcpClient.print(msg);
             Serial.println("[WiFi] 已回报局域网 IP 给 APP");
+
+        // 启动 UDP 广播，让局域网内其他设备也能发现
+        s_broadcastUdp.begin(8888);
         }
     } else {
         Serial.println("[WiFi] 配网失败，保持 AP+STA 模式");
@@ -215,6 +222,16 @@ void Comms::update() {
             s_clientConnected = false;
             Serial.println("[WiFi] TCP 客户端断开");
         }
+    }
+
+    // 周期 UDP 广播设备信息（仅 STA 连上家庭 WiFi 时）
+    if (WiFi.status() == WL_CONNECTED && (millis() - s_lastBroadcastMs > 2000)) {
+        s_lastBroadcastMs = millis();
+        String staIP = WiFi.localIP().toString();
+        String msg = "WINDER:" + staIP + ":" + String(WIFI_TCP_PORT);
+        s_broadcastUdp.beginPacket(IPAddress(255, 255, 255, 255), 8888);
+        s_broadcastUdp.print(msg);
+        s_broadcastUdp.endPacket();
     }
 }
 
