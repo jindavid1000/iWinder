@@ -18,6 +18,7 @@ bool setConfigValue(DeviceConfig &c, const String &key, float value) {
     if (key == "pinMotorPwm")         { c.pinMotorPwm = (uint8_t)value;           return true; }
     if (key == "pinServoPwm")         { c.pinServoPwm = (uint8_t)value;           return true; }
     if (key == "pinEndstop")          { c.pinEndstop = (uint8_t)value;            return true; }
+    if (key == "pinEndstopRight")     { c.pinEndstopRight = (uint8_t)value;       return true; }
     if (key == "pinHallIdler")        { c.pinHallIdler = (uint8_t)value;          return true; }
     if (key == "pinHallSpool")        { c.pinHallSpool = (uint8_t)value;          return true; }
 
@@ -82,6 +83,7 @@ String getConfigJson(const DeviceConfig &c) {
     doc["pinMotorPwm"]              = c.pinMotorPwm;
     doc["pinServoPwm"]              = c.pinServoPwm;
     doc["pinEndstop"]               = c.pinEndstop;
+    doc["pinEndstopRight"]          = c.pinEndstopRight;
     doc["pinHallIdler"]             = c.pinHallIdler;
     doc["pinHallSpool"]             = c.pinHallSpool;
     doc["hallIdlerMagnets"]         = c.hallIdlerMagnets;

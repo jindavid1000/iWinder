@@ -6,6 +6,7 @@ Sensors g_sensors;
 uint8_t    Sensors::_pinHallIdler   = 0;
 uint8_t    Sensors::_pinHallSpool   = 0;
 uint8_t    Sensors::_pinEndstop     = 0;
+uint8_t    Sensors::_pinEndstopRight = 0;
 volatile uint32_t Sensors::_idlerCount   = 0;
 volatile uint32_t Sensors::_spoolCount   = 0;
 volatile uint32_t Sensors::_totalIdler   = 0;
@@ -13,7 +14,9 @@ volatile uint32_t Sensors::_totalSpool   = 0;
 volatile uint32_t Sensors::_lastIdlerUs  = 0;
 volatile uint32_t Sensors::_lastSpoolUs  = 0;
 volatile uint32_t Sensors::_lastEndstopUs = 0;
+volatile uint32_t Sensors::_lastEndstopRightUs = 0;
 volatile bool     Sensors::_endstopState  = false;
+volatile bool     Sensors::_endstopRightState = false;
 volatile uint32_t Sensors::_hallDebounceUs   = 5000;
 volatile uint32_t Sensors::_endstopDebounceUs = 20000;
 EndstopCallback   Sensors::_endstopCb = nullptr;
@@ -39,42 +42,60 @@ void IRAM_ATTR Sensors::isrEndstop() {
     if (now - _lastEndstopUs < _endstopDebounceUs) return;
     _lastEndstopUs = now;
     _endstopState = true;
-    if (_endstopCb) _endstopCb();
+    if (_endstopCb) _endstopCb(false);
 }
 
-void Sensors::begin(uint8_t pinHallIdler, uint8_t pinHallSpool, uint8_t pinEndstop,
+void IRAM_ATTR Sensors::isrEndstopRight() {
+    uint32_t now = micros();
+    if (now - _lastEndstopRightUs < _endstopDebounceUs) return;
+    _lastEndstopRightUs = now;
+    _endstopRightState = true;
+    if (_endstopCb) _endstopCb(true);
+}
+
+void Sensors::begin(uint8_t pinHallIdler, uint8_t pinHallSpool,
+                     uint8_t pinEndstop, uint8_t pinEndstopRight,
                      uint32_t hallDebounceUs, uint32_t endstopDebounceUs) {
     _pinHallIdler = pinHallIdler;
     _pinHallSpool = pinHallSpool;
     _pinEndstop   = pinEndstop;
+    _pinEndstopRight = pinEndstopRight;
     _hallDebounceUs    = hallDebounceUs;
     _endstopDebounceUs = endstopDebounceUs;
     _idlerCount = _spoolCount = 0;
     _totalIdler = _totalSpool = 0;
     _endstopState = false;
+    _endstopRightState = false;
 
     pinMode(_pinHallIdler, INPUT_PULLUP);
     pinMode(_pinHallSpool, INPUT_PULLUP);
     pinMode(_pinEndstop,   INPUT_PULLUP);
+    pinMode(_pinEndstopRight, INPUT_PULLUP);
 
     attachInterrupt(_pinHallIdler, isrHallIdler, FALLING);
     attachInterrupt(_pinHallSpool, isrHallSpool, FALLING);
     attachInterrupt(_pinEndstop,   isrEndstop,   FALLING);
+    attachInterrupt(_pinEndstopRight, isrEndstopRight, FALLING);
 }
 
-void Sensors::reattachPins(uint8_t pinHallIdler, uint8_t pinHallSpool, uint8_t pinEndstop) {
+void Sensors::reattachPins(uint8_t pinHallIdler, uint8_t pinHallSpool,
+                            uint8_t pinEndstop, uint8_t pinEndstopRight) {
     detachInterrupt(_pinHallIdler);
     detachInterrupt(_pinHallSpool);
     detachInterrupt(_pinEndstop);
+    detachInterrupt(_pinEndstopRight);
     _pinHallIdler = pinHallIdler;
     _pinHallSpool = pinHallSpool;
     _pinEndstop   = pinEndstop;
+    _pinEndstopRight = pinEndstopRight;
     pinMode(_pinHallIdler, INPUT_PULLUP);
     pinMode(_pinHallSpool, INPUT_PULLUP);
     pinMode(_pinEndstop,   INPUT_PULLUP);
+    pinMode(_pinEndstopRight, INPUT_PULLUP);
     attachInterrupt(_pinHallIdler, isrHallIdler, FALLING);
     attachInterrupt(_pinHallSpool, isrHallSpool, FALLING);
     attachInterrupt(_pinEndstop,   isrEndstop,   FALLING);
+    attachInterrupt(_pinEndstopRight, isrEndstopRight, FALLING);
 }
 
 void Sensors::setDebounce(uint32_t hallUs, uint32_t endstopUs) {
@@ -112,10 +133,11 @@ uint32_t Sensors::getSpoolPulsesAndReset() {
     return v;
 }
 
-bool Sensors::isEndstopTriggered() {
+bool Sensors::isEndstopTriggered(bool right) {
     portENTER_CRITICAL(&g_dataMux);
-    bool v = _endstopState;
-    _endstopState = false;  // 读后清
+    bool v = right ? _endstopRightState : _endstopState;
+    if (right) _endstopRightState = false;
+    else       _endstopState = false;
     portEXIT_CRITICAL(&g_dataMux);
     return v;
 }

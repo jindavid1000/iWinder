@@ -224,13 +224,21 @@ class _TraverseIndicator extends StatelessWidget {
   }
 }
 
-class _SpeedControl extends StatelessWidget {
+class _SpeedControl extends StatefulWidget {
   final AppModel model;
   const _SpeedControl({required this.model});
 
   @override
+  State<_SpeedControl> createState() => _SpeedControlState();
+}
+
+class _SpeedControlState extends State<_SpeedControl> {
+  bool _dragging = false;
+  double _dragValue = 0;
+
+  @override
   Widget build(BuildContext context) {
-    final s = model.status;
+    final model = widget.model;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -240,14 +248,26 @@ class _SpeedControl extends StatelessWidget {
             Row(children: [
               const Text('运行速度'),
               const Spacer(),
-              Text('${s.speed}%', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text('${(_dragging ? _dragValue : model.targetSpeed.toDouble()).round()}%',
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ]),
             Slider(
-              value: s.speed.toDouble().clamp(0, 100),
+              value: (_dragging ? _dragValue : model.targetSpeed.toDouble()).clamp(0, 100),
               min: 0,
               max: 100,
               divisions: 100,
-              onChanged: (v) => model.sendSetSpeed(v.round()),
+              onChangeStart: (v) {
+                _dragging = true;
+                _dragValue = v;
+              },
+              onChanged: (v) {
+                setState(() => _dragValue = v);
+                model.sendSetSpeed(v.round());  // 只发指令，不动 model，避免打断手势
+              },
+              onChangeEnd: (v) {
+                model.targetSpeed = v.round();  // 松手才提交
+                setState(() => _dragging = false);
+              },
             ),
           ],
         ),
@@ -272,7 +292,7 @@ class _ControlButtons extends StatelessWidget {
       runSpacing: 8,
       children: [
         FilledButton.icon(
-          onPressed: (isRunning || isPaused) ? null : () => model.sendStart(model.config.motorDefaultSpeed),
+          onPressed: (isRunning || isPaused) ? null : () => model.sendStart(model.targetSpeed),
           icon: const Icon(Icons.play_arrow),
           label: const Text('启动'),
         ),

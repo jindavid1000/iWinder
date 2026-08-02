@@ -24,6 +24,8 @@ class SettingsScreen extends StatelessWidget {
                 onChanged: (v) => model.config.pinServoPwm = v.round()),
             _NumField(label: 'Endstop', value: model.config.pinEndstop.toDouble(),
                 onChanged: (v) => model.config.pinEndstop = v.round()),
+            _NumField(label: 'Endstop 右', value: model.config.pinEndstopRight.toDouble(),
+                onChanged: (v) => model.config.pinEndstopRight = v.round()),
             _NumField(label: '霍尔 A (从动轮)', value: model.config.pinHallIdler.toDouble(),
                 onChanged: (v) => model.config.pinHallIdler = v.round()),
             _NumField(label: '霍尔 B (料盘)', value: model.config.pinHallSpool.toDouble(),
