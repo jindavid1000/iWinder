@@ -243,6 +243,7 @@ class _TcpConnectSectionState extends State<_TcpConnectSection> {
                       if (ok && mounted) {
                         m.sendGetParams();
                         m.sendListPresets();
+                        m.sendGetWifiStatus();
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('连接成功')),
                         );
@@ -304,31 +305,34 @@ class _WifiSectionState extends State<_WifiSection> {
                   Text(widget.model.deviceIP ?? '', style: const TextStyle(fontFamily: 'monospace')),
                 ]),
               ),
-            TextField(
-              controller: _ssidCtrl,
-              decoration: const InputDecoration(labelText: 'WiFi 名称', border: OutlineInputBorder(), isDense: true),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _passCtrl,
-              obscureText: _obscure,
-              decoration: InputDecoration(
-                labelText: 'WiFi 密码',
-                border: const OutlineInputBorder(),
-                isDense: true,
-                suffixIcon: IconButton(
-                  icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
-                  onPressed: () => setState(() => _obscure = !_obscure),
+            if (!widget.model.deviceWifiConnected) ...[
+              TextField(
+                controller: _ssidCtrl,
+                decoration: const InputDecoration(labelText: 'WiFi 名称', border: OutlineInputBorder(), isDense: true),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _passCtrl,
+                obscureText: _obscure,
+                decoration: InputDecoration(
+                  labelText: 'WiFi 密码',
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                  suffixIcon: IconButton(
+                    icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
+                    onPressed: () => setState(() => _obscure = !_obscure),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 12),
+              const SizedBox(height: 12),
+            ],
             Wrap(spacing: 8, children: [
-              FilledButton.icon(
-                onPressed: () => widget.model.sendSetWifi(_ssidCtrl.text, _passCtrl.text),
-                icon: const Icon(Icons.wifi_protected_setup),
-                label: const Text('发送配网'),
-              ),
+              if (!widget.model.deviceWifiConnected)
+                FilledButton.icon(
+                  onPressed: () => widget.model.sendSetWifi(_ssidCtrl.text, _passCtrl.text),
+                  icon: const Icon(Icons.wifi_protected_setup),
+                  label: const Text('发送配网'),
+                ),
               OutlinedButton.icon(
                 onPressed: () => widget.model.sendGetWifiStatus(),
                 icon: const Icon(Icons.refresh),
@@ -442,6 +446,7 @@ class _MdnsDiscoverCardState extends State<_MdnsDiscoverCard> {
                         if (ok && mounted) {
                           widget.model.sendGetParams();
                           widget.model.sendListPresets();
+                          widget.model.sendGetWifiStatus();
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text('发现设备: $ip，已连接')),
                           );
