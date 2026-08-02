@@ -34,6 +34,7 @@ public:
 private:
     uint8_t    _pin        = 0;
     uint8_t    _channel    = 1;     // LEDC channel (servo = 1)
+    bool       _initialized = false;
     uint16_t   _freq       = 50;
     uint8_t    _resBits    = 16;
     uint32_t   _maxDuty    = 65535;

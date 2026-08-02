@@ -32,13 +32,18 @@ void Winder::begin() {
 }
 
 void Winder::applyConfig() {
+    // 只有首次调用才初始化 LEDC（避免通道重复分配）
     const DeviceConfig &c = g_config;
 
+    if (!_hwInited) {
     // 电机
     g_motor.begin(c.pinMotorPwm, MOTOR_PWM_FREQ, MOTOR_RES_BITS);
 
     // 舵机
     g_servo.begin(c.pinServoPwm, SERVO_PWM_FREQ, SERVO_RES_BITS);
+    _hwInited = true;
+    }
+
     g_servo.setPulses(c.servoStopPulse, c.servoLeftPulse, c.servoRightPulse, c.servoHomePulse);
     g_servo.setSpeeds(c.servoTraverseSpeedLeft, c.servoTraverseSpeedRight);
 
@@ -196,7 +201,14 @@ void Winder::doHoming() {
     // 超时检测
     if ((millis() - _homingStartMs) > (uint32_t)(HOMING_TIMEOUT_S * 1000)) {
         g_servo.stop();
-        setError(ERR_HOMING_FAILED, "寻原点超时");
+        if (_bootHoming) {
+            // 开机寻原点超时：软警告，回 IDLE（可能是传感器未连接）
+            _bootHoming = false;
+            Serial.println("[Winder] 开机寻原点超时（传感器未连接?），继续待机");
+            setState(STATE_IDLE);
+        } else {
+            setError(ERR_HOMING_FAILED, "寻原点超时");
+        }
     }
 }
 

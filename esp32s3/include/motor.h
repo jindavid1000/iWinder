@@ -19,6 +19,7 @@ public:
 private:
     uint8_t  _pin        = 0;
     uint8_t  _channel    = 0;       // LEDC channel (motor = 0)
+    bool     _initialized = false;
     uint16_t _freq       = 1000;
     uint8_t  _resBits    = 10;
     uint32_t _maxDuty    = 1023;

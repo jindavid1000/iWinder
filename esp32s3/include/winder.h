@@ -28,11 +28,13 @@ public:
 private:
     uint32_t _lastTickMs   = 0;
     uint32_t _lastReportMs = 0;
+    bool     _hwInited     = false;
 
     // 排线状态
     uint16_t _roundTrips   = 0;    // 当前周期来回数
     bool     _calibrating  = false;
     uint32_t _homingStartMs = 0;
+    bool     _bootHoming   = true;  // 开机寻原点（超时软处理）
 
     // 速度
     int      _targetSpeed  = 0;

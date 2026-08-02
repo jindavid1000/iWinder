@@ -29,6 +29,60 @@ class AppModel extends ChangeNotifier {
   String? deviceIP;
   String? deviceSSID;
   bool deviceWifiConnected = false;
+  String connectedIP = '';  // 实际连接用的 IP
+
+  // 预览模式（模拟器调试用）
+  bool previewMode = false;
+
+  // 预览模式本地预设管理
+  final List<MapEntry<String, DeviceConfig>> _localPresets = [];
+
+  void togglePreviewMode() {
+    previewMode = !previewMode;
+    if (previewMode) {
+      bleConnected = true;
+      // 填入模拟状态数据
+      status.state = 'idle';
+      status.speed = config.motorDefaultSpeed;
+      status.spoolRpm = 0;
+      status.spoolTurns = 0;
+      status.lengthMeasured = 0;
+      status.lengthTheoretical = 0;
+      status.effectiveDiameter = config.spoolHasCardboard
+          ? config.spoolCoreDiaWithCard
+          : config.spoolCoreDiaNoCard;
+      status.traversePos = config.traverseLeftStart;
+      status.link = 'ble';
+    } else {
+      bleConnected = false;
+    }
+    notifyListeners();
+  }
+
+  void localSavePreset(String name, DeviceConfig cfg) {
+    final idx = _localPresets.indexWhere((e) => e.key == name);
+    if (idx >= 0) {
+      _localPresets[idx] = MapEntry(name, cfg);
+    } else {
+      _localPresets.add(MapEntry(name, cfg));
+    }
+    presets = _localPresets.map((e) => e.key).toList();
+    notifyListeners();
+  }
+
+  void localLoadPreset(String name) {
+    final entry = _localPresets.where((e) => e.key == name).firstOrNull;
+    if (entry != null) {
+      config = entry.value.copy();
+      notifyListeners();
+    }
+  }
+
+  void localDeletePreset(String name) {
+    _localPresets.removeWhere((e) => e.key == name);
+    presets = _localPresets.map((e) => e.key).toList();
+    notifyListeners();
+  }
 
   AppModel() {
     _comm.onMessage = _handleMessage;
@@ -83,11 +137,16 @@ class AppModel extends ChangeNotifier {
   // ===========================================================================
 
   Future<bool> connectWifi(String ip, {int port = 8080}) async {
-    return await _comm.connectWifi(ip, port);
+    final ok = await _comm.connectWifi(ip, port);
+    if (ok) {
+      connectedIP = ip;
+    }
+    return ok;
   }
 
   Future<void> disconnectWifi() async {
     await _comm.disconnectWifi();
+    connectedIP = '';
   }
 
   // ===========================================================================

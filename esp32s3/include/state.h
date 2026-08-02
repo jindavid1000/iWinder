@@ -73,7 +73,6 @@ struct RuntimeState {
 
     // 通信
     CommLink      activeLink      = LINK_NONE;
-    bool          bleConnected    = false;
     bool          wifiConnected   = false;
     String        wifiIP          = "";
     String        wifiSSID        = "";

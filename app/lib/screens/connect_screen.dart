@@ -16,6 +16,36 @@ class ConnectScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          if (!model.bleConnected && !model.wifiConnected)
+            Card(
+              color: Theme.of(context).colorScheme.primaryContainer,
+              child: ListTile(
+                leading: Icon(Icons.visibility,
+                    color: Theme.of(context).colorScheme.primary),
+                title: const Text('预览模式'),
+                subtitle: const Text('模拟设备连接，浏览所有界面'),
+                trailing: FilledButton.tonal(
+                  onPressed: () => model.togglePreviewMode(),
+                  child: const Text('开启'),
+                ),
+                onTap: () => model.togglePreviewMode(),
+              ),
+            ),
+          if (model.previewMode)
+            Card(
+              color: Colors.orange.shade50,
+              child: ListTile(
+                leading: const Icon(Icons.visibility, color: Colors.orange),
+                title: const Text('预览模式已开启'),
+                subtitle: const Text('使用模拟数据。点击退出预览模式'),
+                trailing: OutlinedButton(
+                  onPressed: () => model.togglePreviewMode(),
+                  child: const Text('退出'),
+                ),
+                onTap: () => model.togglePreviewMode(),
+              ),
+            ),
+          if (model.previewMode) const SizedBox(height: 16),
           _ConnectionStatus(model: model),
           const SizedBox(height: 16),
           _BleSection(model: model),
@@ -96,10 +126,49 @@ class _BleSection extends StatelessWidget {
       return Card(
         child: ListTile(
           leading: const Icon(Icons.bluetooth_connected, color: Colors.green),
-          title: const Text('esp 绕线器'),
+          title: const Text('ESP-Winder'),
           subtitle: const Text('已连接，点击断开'),
           trailing: TextButton(
             onPressed: () => model.disconnect(),
+            child: const Text('断开'),
+          ),
+        ),
+      );
+    }
+    return _TcpConnectSection(model: model);
+  }
+}
+
+class _TcpConnectSection extends StatefulWidget {
+  final AppModel model;
+  const _TcpConnectSection({required this.model});
+  @override
+  State<_TcpConnectSection> createState() => _TcpConnectSectionState();
+}
+
+class _TcpConnectSectionState extends State<_TcpConnectSection> {
+  final _ipCtrl = TextEditingController(text: '192.168.4.1');
+  final _portCtrl = TextEditingController(text: '8080');
+  bool _connecting = false;
+
+  @override
+  void dispose() {
+    _ipCtrl.dispose();
+    _portCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final m = widget.model;
+    if (m.wifiConnected) {
+      return Card(
+        child: ListTile(
+          leading: const Icon(Icons.wifi, color: Colors.green),
+          title: Text('已连接: ${m.connectedIP}'),
+          subtitle: const Text('TCP 连接已建立'),
+          trailing: TextButton(
+            onPressed: () => m.disconnectWifi(),
             child: const Text('断开'),
           ),
         ),
@@ -112,28 +181,74 @@ class _BleSection extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(children: [
-              Text('蓝牙设备', style: Theme.of(context).textTheme.titleMedium),
-              const Spacer(),
-              FilledButton.icon(
-                onPressed: model.scanning ? null : () => model.startScan(),
-                icon: model.scanning
-                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Icon(Icons.search),
-                label: Text(model.scanning ? '搜索中...' : '搜索'),
+              Icon(Icons.wifi, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 8),
+              Text('WiFi 连接', style: Theme.of(context).textTheme.titleMedium),
+            ]),
+            const SizedBox(height: 4),
+            const Text(
+              '1. 手机 WiFi 设置连接热点 ESP-Winder\n'
+              '2. 输入 IP 地址（默认 192.168.4.1）\n'
+              '3. 点击连接',
+              style: TextStyle(fontSize: 12, color: Colors.grey, height: 1.6),
+            ),
+            const SizedBox(height: 12),
+            Row(children: [
+              const SizedBox(width: 40, child: Text('IP')),
+              Expanded(
+                child: TextField(
+                  controller: _ipCtrl,
+                  decoration: const InputDecoration(
+                    isDense: true,
+                    border: OutlineInputBorder(),
+                    hintText: '192.168.4.1',
+                  ),
+                ),
               ),
             ]),
             const SizedBox(height: 8),
-            if (model.scanResults.isEmpty && !model.scanning)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
-                child: Center(child: Text('点击搜索查找设备', style: TextStyle(color: Colors.grey))),
+            Row(children: [
+              const SizedBox(width: 40, child: Text('端口')),
+              Expanded(
+                child: TextField(
+                  controller: _portCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    isDense: true,
+                    border: OutlineInputBorder(),
+                    hintText: '8080',
+                  ),
+                ),
               ),
-            ...model.scanResults.map((d) => ListTile(
-                  leading: const Icon(Icons.bluetooth),
-                  title: Text(d.platformName),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => model.connectBle(d),
-                )),
+            ]),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: _connecting
+                  ? null
+                  : () async {
+                      setState(() => _connecting = true);
+                      final ok = await m.connectWifi(
+                        _ipCtrl.text,
+                        port: int.tryParse(_portCtrl.text) ?? 8080,
+                      );
+                      setState(() => _connecting = false);
+                      if (ok && mounted) {
+                        m.sendGetParams();
+                        m.sendListPresets();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('连接成功')),
+                        );
+                      } else if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('连接失败，检查 IP 和端口')),
+                        );
+                      }
+                    },
+              icon: _connecting
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.cable),
+              label: Text(_connecting ? '连接中...' : '连接'),
+            ),
           ],
         ),
       ),
