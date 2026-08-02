@@ -52,6 +52,10 @@ class ConnectScreen extends StatelessWidget {
             _SavedDeviceCard(model: model),
           if (model.savedDeviceIP != null && !model.wifiConnected)
             const SizedBox(height: 16),
+          if (!model.wifiConnected)
+            _MdnsDiscoverCard(model: model),
+          if (!model.wifiConnected)
+            const SizedBox(height: 16),
           _BleSection(model: model),
           const SizedBox(height: 16),
           if (model.isConnected) _WifiSection(model: model),
@@ -389,6 +393,70 @@ class _SavedDeviceCard extends StatelessWidget {
                 label: const Text('清除'),
               ),
             ]),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+class _MdnsDiscoverCard extends StatefulWidget {
+  final AppModel model;
+  const _MdnsDiscoverCard({required this.model});
+  @override
+  State<_MdnsDiscoverCard> createState() => _MdnsDiscoverCardState();
+}
+
+class _MdnsDiscoverCardState extends State<_MdnsDiscoverCard> {
+  bool _scanning = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Icon(Icons.search, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 8),
+              Text('局域网设备发现', style: Theme.of(context).textTheme.titleMedium),
+            ]),
+            const SizedBox(height: 4),
+            const Text(
+              '手机和设备在同一 WiFi 下，自动搜索 esp-winder',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            const SizedBox(height: 12),
+            FilledButton.tonalIcon(
+              onPressed: _scanning
+                  ? null
+                  : () async {
+                      setState(() => _scanning = true);
+                      final ip = await widget.model.discoverDevice();
+                      setState(() => _scanning = false);
+                      if (ip != null && mounted) {
+                        final ok = await widget.model.connectWifi(ip);
+                        if (ok && mounted) {
+                          widget.model.sendGetParams();
+                          widget.model.sendListPresets();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('发现设备: $ip，已连接')),
+                          );
+                        }
+                      } else if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('未找到设备，确认在同一 WiFi 网络')),
+                        );
+                      }
+                    },
+              icon: _scanning
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.radar),
+              label: Text(_scanning ? '搜索中...' : '搜索设备'),
+            ),
           ],
         ),
       ),
