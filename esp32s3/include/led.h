@@ -22,12 +22,12 @@ struct LedColor {
 
 class StatusLED {
 public:
-    void begin(uint8_t pin = 48);
+    void begin(uint8_t pin = 2);
     void update();  // 在主循环中调用，根据状态自动更新
     void setState(DeviceState state, bool bleConn, bool wifiConn);
 
 private:
-    uint8_t   _pin       = 48;
+    uint8_t   _pin       = 2;
     Adafruit_NeoPixel* _strip = nullptr;
     uint32_t  _lastMs    = 0;
     bool      _on        = false;

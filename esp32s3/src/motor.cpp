@@ -8,7 +8,16 @@ void Motor::begin(uint8_t pin, uint16_t freq, uint8_t resBits) {
     _freq    = freq;
     _resBits = resBits;
     _maxDuty = (1 << resBits) - 1;
-    ledcSetup(_channel, _freq, _resBits);
+
+    uint32_t actualFreq = ledcSetup(_channel, _freq, _resBits);
+    if (actualFreq == 0) {
+        Serial.printf("[Motor] LEDC 初始化失败! channel=%d freq=%d bits=%d\n",
+                      _channel, _freq, _resBits);
+        return;
+    }
+    Serial.printf("[Motor] LEDC OK: ch=%d freq=%d bits=%d actual=%d\n",
+                  _channel, _freq, _resBits, actualFreq);
+
     ledcAttachPin(_pin, _channel);
     ledcWrite(_channel, 0);
     _currentSpeed = 0;
@@ -30,6 +39,7 @@ void Motor::setSpeedPct(float pct) {
 }
 
 void Motor::update() {
+    if (!_initialized) return;
     if (_currentSpeed == _targetSpeed) {
         _lastUpdateMs = millis();
         return;
@@ -53,5 +63,5 @@ void Motor::update() {
 void Motor::stop() {
     _targetSpeed  = 0;
     _currentSpeed = 0;
-    ledcWrite(_channel, 0);
+    if (_initialized) ledcWrite(_channel, 0);
 }
