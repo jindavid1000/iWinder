@@ -48,9 +48,13 @@ class ConnectScreen extends StatelessWidget {
           if (model.previewMode) const SizedBox(height: 16),
           _ConnectionStatus(model: model),
           const SizedBox(height: 16),
+          if (model.savedDeviceIP != null && !model.wifiConnected)
+            _SavedDeviceCard(model: model),
+          if (model.savedDeviceIP != null && !model.wifiConnected)
+            const SizedBox(height: 16),
           _BleSection(model: model),
           const SizedBox(height: 16),
-          if (model.bleConnected) _WifiSection(model: model),
+          if (model.isConnected) _WifiSection(model: model),
         ],
       ),
     );
@@ -332,6 +336,58 @@ class _WifiSectionState extends State<_WifiSection> {
                   icon: const Icon(Icons.cable),
                   label: const Text('连接 TCP'),
                 ),
+            ]),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+class _SavedDeviceCard extends StatelessWidget {
+  final AppModel model;
+  const _SavedDeviceCard({required this.model});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: Colors.green.shade50,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              const Icon(Icons.bookmark, color: Colors.green, size: 20),
+              const SizedBox(width: 8),
+              Text('已保存的设备', style: Theme.of(context).textTheme.titleMedium),
+            ]),
+            const SizedBox(height: 8),
+            Row(children: [
+              const Icon(Icons.wifi, size: 18, color: Colors.grey),
+              const SizedBox(width: 6),
+              Text(model.savedDeviceSSID ?? ''),
+            ]),
+            const SizedBox(height: 4),
+            Row(children: [
+              const Icon(Icons.computer, size: 18, color: Colors.grey),
+              const SizedBox(width: 6),
+              Text(model.savedDeviceIP ?? '', style: const TextStyle(fontFamily: 'monospace', fontSize: 16)),
+            ]),
+            const SizedBox(height: 12),
+            Row(children: [
+              FilledButton.icon(
+                onPressed: () => model.connectWifi(model.savedDeviceIP!),
+                icon: const Icon(Icons.cable),
+                label: const Text('快速连接'),
+              ),
+              const SizedBox(width: 8),
+              TextButton.icon(
+                onPressed: () => model.clearSavedDeviceIP(),
+                icon: const Icon(Icons.delete_outline, size: 20),
+                label: const Text('清除'),
+              ),
             ]),
           ],
         ),
