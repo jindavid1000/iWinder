@@ -77,7 +77,8 @@
 //============================================================================
 //  4.9  通信参数
 //============================================================================
-#define BLE_DEVICE_NAME           "esp 绕线器"
+#define BLE_DEVICE_NAME           "ESP-Winder"
+#define BLE_DEVICE_NAME_CN        "esp 绕线器"
 #define BLE_SERVICE_UUID          "6e400001-b5a3-f393-e0a9-e50e24dcca9e"
 #define BLE_RX_CHAR_UUID          "6e400002-b5a3-f393-e0a9-e50e24dcca9e"
 #define BLE_TX_CHAR_UUID          "6e400003-b5a3-f393-e0a9-e50e24dcca9e"
@@ -90,6 +91,13 @@
 #define HOMING_TIMEOUT_S          30
 #define MAX_RUNTIME_S             3600
 #define WIFI_CONNECT_TIMEOUT_S    15
+
+//============================================================================
+//  WiFi STA 凭据（连家庭路由器，AP 模式 DHCP 不工作时使用）
+//  修改为你的 WiFi 名称和密码
+//============================================================================
+#define WIFI_STA_SSID             "DISABLED_STA_TEST"
+#define WIFI_STA_PASSWORD         "00000000"
 
 //============================================================================
 //  4.11 任务完成参数

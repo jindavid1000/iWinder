@@ -6,7 +6,7 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 /// 统一通信管理器（BLE + WiFi TCP）
 class CommManager {
-  static const String targetName = 'esp 绕线器';
+  static const String targetName = 'ESP-Winder';
   static final Guid _serviceUuid =
       Guid('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
   static final Guid _rxUuid =

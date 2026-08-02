@@ -3,6 +3,7 @@
 ServoCtl g_servo;
 
 void ServoCtl::begin(uint8_t pin, uint16_t freq, uint8_t resBits) {
+    if (_initialized) return;
     _pin     = pin;
     _freq    = freq;
     _resBits = resBits;
@@ -12,6 +13,7 @@ void ServoCtl::begin(uint8_t pin, uint16_t freq, uint8_t resBits) {
     writePulse(_pulseStop);
     _direction = DIR_NONE;
     _position  = 0;
+    _initialized = true;
 }
 
 void ServoCtl::reattach(uint8_t pin) {
@@ -22,40 +24,20 @@ void ServoCtl::reattach(uint8_t pin) {
 }
 
 void ServoCtl::writePulse(uint16_t pulseUs) {
-    // 50Hz => 20000us 周期，换算为占空比
     uint32_t duty = (uint32_t)((float)pulseUs / 20000.0f * _maxDuty);
     ledcWrite(_channel, duty);
 }
 
-void ServoCtl::moveLeft() {
-    writePulse(_pulseLeft);
-    _direction = DIR_LEFT;
-}
-
-void ServoCtl::moveRight() {
-    writePulse(_pulseRight);
-    _direction = DIR_RIGHT;
-}
-
-void ServoCtl::moveHome() {
-    writePulse(_pulseHome);
-    _direction = DIR_LEFT;  // 寻原点也是左行
-}
-
-void ServoCtl::stop() {
-    writePulse(_pulseStop);
-    _direction = DIR_NONE;
-}
+void ServoCtl::moveLeft()  { writePulse(_pulseLeft);  _direction = DIR_LEFT; }
+void ServoCtl::moveRight() { writePulse(_pulseRight); _direction = DIR_RIGHT; }
+void ServoCtl::moveHome()  { writePulse(_pulseHome);  _direction = DIR_LEFT; }
+void ServoCtl::stop()      { writePulse(_pulseStop);  _direction = DIR_NONE; }
 
 void ServoCtl::updatePosition(uint32_t dtMs) {
     if (_direction == DIR_NONE) return;
-
     float speed = (_direction == DIR_LEFT) ? _speedLeft : _speedRight;
-    if (speed <= 0) return;  // 未标定，不估算位置
-
-    float dtSec = dtMs / 1000.0f;
-    float delta = speed * dtSec;
-
+    if (speed <= 0) return;
+    float delta = speed * (dtMs / 1000.0f);
     if (_direction == DIR_LEFT) {
         _position -= delta;
         if (_position < 0) _position = 0;
@@ -65,13 +47,8 @@ void ServoCtl::updatePosition(uint32_t dtMs) {
 }
 
 void ServoCtl::setPulses(uint16_t stop, uint16_t left, uint16_t right, uint16_t home) {
-    _pulseStop  = stop;
-    _pulseLeft  = left;
-    _pulseRight = right;
-    _pulseHome  = home;
+    _pulseStop = stop; _pulseLeft = left; _pulseRight = right; _pulseHome = home;
 }
-
 void ServoCtl::setSpeeds(float leftMmS, float rightMmS) {
-    _speedLeft  = leftMmS;
-    _speedRight = rightMmS;
+    _speedLeft = leftMmS; _speedRight = rightMmS;
 }

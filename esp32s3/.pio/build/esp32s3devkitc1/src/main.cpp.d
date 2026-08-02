@@ -181,4 +181,26 @@
  /Users/jty/.platformio/packages/framework-arduinoespressif32/cores/esp32/Arduino.h \
  include/config.h include/state.h include/config.h include/motor.h \
  include/servo.h include/state.h include/sensors.h include/slip.h \
- include/storage.h include/comms.h include/protocol.h include/winder.h
+ include/storage.h include/comms.h include/protocol.h include/winder.h \
+ include/led.h \
+ .pio/libdeps/esp32s3devkitc1/Adafruit\ NeoPixel/Adafruit_NeoPixel.h \
+ /Users/jty/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFi.h \
+ /Users/jty/.platformio/packages/framework-arduinoespressif32/cores/esp32/Print.h \
+ /Users/jty/.platformio/packages/framework-arduinoespressif32/cores/esp32/IPv6Address.h \
+ /Users/jty/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFiType.h \
+ /Users/jty/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFiSTA.h \
+ /Users/jty/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFiGeneric.h \
+ /Users/jty/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_wifi/include/esp_smartconfig.h \
+ /Users/jty/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/wifi_provisioning/include/wifi_provisioning/manager.h \
+ /Users/jty/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/protocomm/include/common/protocomm.h \
+ /Users/jty/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/protocomm/include/security/protocomm_security.h \
+ /Users/jty/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/wifi_provisioning/include/wifi_provisioning/wifi_config.h \
+ /Users/jty/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFiAP.h \
+ /Users/jty/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFiScan.h \
+ /Users/jty/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFiClient.h \
+ /Users/jty/.platformio/packages/framework-arduinoespressif32/cores/esp32/Client.h \
+ /Users/jty/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFiServer.h \
+ /Users/jty/.platformio/packages/framework-arduinoespressif32/cores/esp32/Server.h \
+ /Users/jty/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFiUdp.h \
+ /Users/jty/.platformio/packages/framework-arduinoespressif32/cores/esp32/Udp.h \
+ /Users/jty/.platformio/packages/framework-arduinoespressif32/cores/esp32/cbuf.h

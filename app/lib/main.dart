@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'services/app_model.dart';
 import 'screens/connect_screen.dart';
 import 'screens/control_screen.dart';
+import 'screens/preset_screen.dart';
 import 'screens/settings_screen.dart';
 
 void main() {
@@ -50,8 +51,9 @@ class _HomePageState extends State<HomePage> {
     final connected = model.isConnected;
 
     final screens = [
-      const ConnectScreen(),
+      ConnectScreen(),
       if (connected) const ControlScreen() else const _NotConnected(),
+      if (connected) const PresetScreen() else const _NotConnected(),
       if (connected) const SettingsScreen() else const _NotConnected(),
     ];
 
@@ -70,6 +72,12 @@ class _HomePageState extends State<HomePage> {
             icon: const Icon(Icons.play_circle_outline),
             selectedIcon: const Icon(Icons.play_circle),
             label: '控制',
+            enabled: connected,
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.bookmark_border),
+            selectedIcon: const Icon(Icons.bookmark),
+            label: '预设',
             enabled: connected,
           ),
           NavigationDestination(

@@ -1,7 +1,7 @@
 #ifndef COMMS_H
 #define COMMS_H
 //============================================================================
-//  comms.h — 统一通信层（BLE + WiFi TCP）
+//  comms.h — 统一通信层（WiFi TCP）
 //  对外提供 commSend() 发送消息，commSetCallback() 注册接收回调。
 //============================================================================
 #include <Arduino.h>
@@ -14,18 +14,16 @@ class Comms {
 public:
     void begin();
 
-    // BLE
-    void bleStart();
-    bool isBleConnected() const;
-
     // WiFi
     void wifiTryReconnect();              // 上电时尝试重连
+    void wifiStartAP();                   // 开启 AP 热点（手机直连模式）
+    bool wifiConnectSTA();                // 连家庭 WiFi（STA 模式）
     void wifiConfigure(const String &ssid, const String &password);
     bool isWifiConnected() const;
     String getWifiIP() const;
     String getWifiSSID() const;
 
-    // 统一发送（同时推送到 BLE 和 WiFi，如在线）
+    // 统一发送（推送到 WiFi TCP）
     void send(const String &msg);
     void send(const char *fmt, ...);
 
@@ -40,7 +38,6 @@ public:
     CommLink activeLink();
 
 private:
-    bool _bleInit = false;
     bool _wifiInit = false;
     MsgCallback _msgCb = nullptr;
 };

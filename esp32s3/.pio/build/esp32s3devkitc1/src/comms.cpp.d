@@ -181,35 +181,6 @@
  /Users/jty/.platformio/packages/framework-arduinoespressif32/cores/esp32/Arduino.h \
  include/state.h include/config.h include/state.h include/storage.h \
  include/config.h \
- /Users/jty/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/BLEDevice.h \
- /Users/jty/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/bt/host/bluedroid/api/include/api/esp_gap_ble_api.h \
- /Users/jty/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/bt/host/bluedroid/api/include/api/esp_bt_defs.h \
- /Users/jty/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/bt/host/bluedroid/api/include/api/esp_gattc_api.h \
- /Users/jty/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/bt/host/bluedroid/api/include/api/esp_gatt_defs.h \
- /Users/jty/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/bt/include/esp32c3/include/esp_bt.h \
- /Users/jty/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/BLEServer.h \
- /Users/jty/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/bt/host/bluedroid/api/include/api/esp_gatts_api.h \
- /Users/jty/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/BLEUUID.h \
- /Users/jty/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/bt/host/bluedroid/api/include/api/esp_gatt_defs.h \
- /Users/jty/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/BLEAdvertising.h \
- /Users/jty/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/RTOS.h \
- /Users/jty/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_ringbuf/include/freertos/ringbuf.h \
- /Users/jty/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/BLECharacteristic.h \
- /Users/jty/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/BLEDescriptor.h \
- /Users/jty/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/BLEValue.h \
- /Users/jty/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/BLEService.h \
- /Users/jty/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/BLESecurity.h \
- /Users/jty/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/BLEAddress.h \
- /Users/jty/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/BLEClient.h \
- /Users/jty/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/BLERemoteService.h \
- /Users/jty/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/BLERemoteCharacteristic.h \
- /Users/jty/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/BLERemoteDescriptor.h \
- /Users/jty/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/BLEAdvertisedDevice.h \
- /Users/jty/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/BLEScan.h \
- /Users/jty/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/BLEUtils.h \
- /Users/jty/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/BLEServer.h \
- /Users/jty/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/BLEUtils.h \
- /Users/jty/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/BLE2902.h \
  /Users/jty/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFi.h \
  /Users/jty/.platformio/packages/framework-arduinoespressif32/cores/esp32/Print.h \
  /Users/jty/.platformio/packages/framework-arduinoespressif32/cores/esp32/IPv6Address.h \

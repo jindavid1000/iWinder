@@ -3,6 +3,7 @@
 Motor g_motor;
 
 void Motor::begin(uint8_t pin, uint16_t freq, uint8_t resBits) {
+    if (_initialized) return;
     _pin     = pin;
     _freq    = freq;
     _resBits = resBits;
@@ -12,6 +13,7 @@ void Motor::begin(uint8_t pin, uint16_t freq, uint8_t resBits) {
     ledcWrite(_channel, 0);
     _currentSpeed = 0;
     _targetSpeed  = 0;
+    _initialized  = true;
 }
 
 void Motor::reattach(uint8_t pin) {
@@ -36,18 +38,14 @@ void Motor::update() {
     uint32_t dt    = now - _lastUpdateMs;
     _lastUpdateMs  = now;
     if (dt == 0) return;
-
-    // 软启动：在 _softStartMs 时间内从 0 渐变到目标
     float step = (100.0f * dt) / _softStartMs;
     if (_targetSpeed > _currentSpeed) {
         _currentSpeed += step;
         if (_currentSpeed > _targetSpeed) _currentSpeed = _targetSpeed;
     } else {
-        // 减速可以快一些
         _currentSpeed -= step * 2;
         if (_currentSpeed < _targetSpeed) _currentSpeed = _targetSpeed;
     }
-
     uint32_t duty = (uint32_t)(_currentSpeed / 100.0f * _maxDuty);
     ledcWrite(_channel, duty);
 }

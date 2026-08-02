@@ -14,7 +14,18 @@ void Storage::begin() {
 // --- 活跃配置 ---
 void Storage::loadConfig(DeviceConfig &cfg) {
     Preferences prefs;
-    prefs.begin(NVS_NAMESPACE, true);  // readonly
+    // 先尝试只读打开
+    bool ok = prefs.begin(NVS_NAMESPACE, true);
+    if (!ok) {
+        // namespace 不存在（首次启动），用默认值并创建
+        cfg = DeviceConfig::defaults();
+        prefs.end();
+        prefs.begin(NVS_NAMESPACE, false);
+        prefs.putBytes(K_CFG, &cfg, sizeof(DeviceConfig));
+        prefs.end();
+        Serial.println("[Storage] 首次启动，已写入默认配置");
+        return;
+    }
     size_t len = prefs.getBytesLength(K_CFG);
     if (len == sizeof(DeviceConfig)) {
         prefs.getBytes(K_CFG, &cfg, sizeof(DeviceConfig));

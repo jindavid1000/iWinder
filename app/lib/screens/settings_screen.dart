@@ -15,8 +15,6 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _PresetSection(model: model),
-          const SizedBox(height: 16),
           _PushConfigButton(model: model),
           const SizedBox(height: 8),
           _ParamCategory(title: '引脚配置', children: [
@@ -130,99 +128,6 @@ class SettingsScreen extends StatelessWidget {
           ]),
           _DangerZone(model: model),
         ],
-      ),
-    );
-  }
-}
-
-class _PresetSection extends StatelessWidget {
-  final AppModel model;
-  const _PresetSection({required this.model});
-
-  void _showSaveDialog(BuildContext context) {
-    final ctrl = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('保存预设'),
-        content: TextField(
-          controller: ctrl,
-          autofocus: true,
-          decoration: const InputDecoration(labelText: '预设名称', border: OutlineInputBorder()),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
-          FilledButton(
-            onPressed: () {
-              if (ctrl.text.isNotEmpty) {
-                model.sendSavePreset(ctrl.text);
-                Navigator.pop(ctx);
-              }
-            },
-            child: const Text('保存'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    String? selected;
-    if (model.presets.isNotEmpty) selected = model.presets.first;
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('预设方案', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 12),
-            if (model.presets.isEmpty)
-              const Text('暂无预设', style: TextStyle(color: Colors.grey))
-            else
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: model.presets.map((name) {
-                  return Chip(
-                    label: Text(name),
-                    deleteIcon: const Icon(Icons.close, size: 18),
-                    onDeleted: () {
-                      showDialog(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          title: Text('删除预设 "$name"?'),
-                          actions: [
-                            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
-                            FilledButton(
-                              onPressed: () { model.sendDeletePreset(name); Navigator.pop(ctx); },
-                              style: FilledButton.styleFrom(backgroundColor: Colors.red),
-                              child: const Text('删除'),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  );
-                }).toList(),
-              ),
-            const SizedBox(height: 12),
-            Wrap(spacing: 8, children: [
-              OutlinedButton.icon(
-                onPressed: model.presets.isEmpty ? null : null,
-                icon: const Icon(Icons.download),
-                label: const Text('加载'),
-              ),
-              FilledButton.icon(
-                onPressed: () => _showSaveDialog(context),
-                icon: const Icon(Icons.save),
-                label: const Text('保存当前'),
-              ),
-            ]),
-          ],
-        ),
       ),
     );
   }
