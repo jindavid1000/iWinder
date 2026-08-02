@@ -4,6 +4,7 @@
 #include "winder.h"
 #include "state.h"
 #include "config.h"
+#include <WiFi.h>
 
 #include <ArduinoJson.h>
 
@@ -304,9 +305,11 @@ void Protocol::sendError(ErrorCode code, const String &msg) {
 void Protocol::sendWifiStatus() {
     JsonDocument doc;
     doc["type"]      = "wifi_status";
-    doc["connected"] = g_comms.isWifiConnected();
-    doc["ip"]        = g_comms.getWifiIP();
-    doc["ssid"]      = g_comms.getWifiSSID();
+    // 直接查 STA 是否连上家庭路由器（不受 AP 影响）
+    bool staConnected = (WiFi.status() == WL_CONNECTED);
+    doc["connected"] = staConnected;
+    doc["ip"]        = staConnected ? WiFi.localIP().toString() : WiFi.softAPIP().toString();
+    doc["ssid"]      = staConnected ? g_state.wifiSSID : String("ESP-Winder");
     String out;
     serializeJson(doc, out);
     g_comms.send(out);

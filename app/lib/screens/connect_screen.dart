@@ -276,6 +276,7 @@ class _WifiSectionState extends State<_WifiSection> {
   final _ssidCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
   bool _obscure = true;
+  bool _provisioned = false;  // 点过发送配网就收起来，不依赖 ESP 回报
 
   @override
   void dispose() {
@@ -294,18 +295,21 @@ class _WifiSectionState extends State<_WifiSection> {
           children: [
             Text('WiFi 配网', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
-            if (widget.model.deviceWifiConnected)
+            if (widget.model.deviceWifiConnected || _provisioned)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Row(children: [
-                  const Icon(Icons.wifi, color: Colors.green, size: 18),
+                  Icon(Icons.wifi, color: Colors.green.shade600, size: 18),
                   const SizedBox(width: 6),
-                  Text('设备已联网: ${widget.model.deviceSSID}'),
+                  Text(widget.model.deviceWifiConnected
+                      ? '设备已联网: ${widget.model.deviceSSID}'
+                      : '配网指令已发送'),
                   const Spacer(),
-                  Text(widget.model.deviceIP ?? '', style: const TextStyle(fontFamily: 'monospace')),
+                  if (widget.model.deviceIP != null)
+                    Text(widget.model.deviceIP!, style: const TextStyle(fontFamily: 'monospace')),
                 ]),
               ),
-            if (!widget.model.deviceWifiConnected) ...[
+            if (!widget.model.deviceWifiConnected && !_provisioned) ...[
               TextField(
                 controller: _ssidCtrl,
                 decoration: const InputDecoration(labelText: 'WiFi 名称', border: OutlineInputBorder(), isDense: true),
@@ -327,9 +331,12 @@ class _WifiSectionState extends State<_WifiSection> {
               const SizedBox(height: 12),
             ],
             Wrap(spacing: 8, children: [
-              if (!widget.model.deviceWifiConnected)
+              if (!widget.model.deviceWifiConnected && !_provisioned)
                 FilledButton.icon(
-                  onPressed: () => widget.model.sendSetWifi(_ssidCtrl.text, _passCtrl.text),
+                  onPressed: () {
+                    widget.model.sendSetWifi(_ssidCtrl.text, _passCtrl.text);
+                    setState(() => _provisioned = true);
+                  },
                   icon: const Icon(Icons.wifi_protected_setup),
                   label: const Text('发送配网'),
                 ),
