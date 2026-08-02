@@ -12,9 +12,9 @@
 //============================================================================
 #define PIN_MOTOR_PWM         4       // 收线盘电机 MOS 管 PWM
 #define PIN_SERVO_PWM         5       // 排线舵机 PWM
-#define PIN_ENDSTOP           6       // Endstop 限位信号
-#define PIN_HALL_IDLER        7       // 霍尔 A — 从动轮
-#define PIN_HALL_SPOOL        8       // 霍尔 B — 料盘
+#define PIN_ENDSTOP           14       // Endstop 限位信号
+#define PIN_HALL_IDLER        13       // 霍尔 A — 从动轮
+#define PIN_HALL_SPOOL        27       // 霍尔 B — 料盘
 
 //============================================================================
 //  4.3  传感器参数
@@ -54,7 +54,7 @@
 #define SERVO_PWM_FREQ            50      // PWM 频率 (Hz)
 #define SERVO_PULSE_MIN           500     // 满速左行极限 (us)
 #define SERVO_PULSE_MAX           2500    // 满速右行极限 (us)
-#define SERVO_RES_BITS            16      // LEDC 分辨率位数
+#define SERVO_RES_BITS            14      // LEDC 分辨率位数
 #define SERVO_TRAVERSE_SPEED_RIGHT  0.0f  // 右行线速度 (mm/s, 0=未标定)
 #define SERVO_TRAVERSE_SPEED_LEFT   0.0f  // 左行线速度 (mm/s, 0=未标定)
 

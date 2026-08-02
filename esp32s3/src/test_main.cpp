@@ -13,12 +13,12 @@
 #include <BLEAdvertising.h>
 #include <WiFi.h>
 
-#define PIN_LED          48
+#define PIN_LED          2
 #define PIN_MOTOR_PWM    4
 #define PIN_SERVO_PWM    5
-#define PIN_ENDSTOP      6
-#define PIN_HALL_IDLER   7
-#define PIN_HALL_SPOOL   8
+#define PIN_ENDSTOP      14
+#define PIN_HALL_IDLER   13
+#define PIN_HALL_SPOOL   27
 
 #define BLE_SERVICE_UUID "6e400001-b5a3-f393-e0a9-e50e24dcca9e"
 #define BLE_RX_UUID      "6e400002-b5a3-f393-e0a9-e50e24dcca9e"
@@ -176,8 +176,8 @@ void testEndstop() {
 void testServo() {
     log("=== 6/7 舵机正反转测试 ===");
     uint8_t ch = 1;
-    setupLEDC(PIN_SERVO_PWM, ch, 50, 16);
-    auto wp = [&](uint16_t us) { ledcWrite(ch, (uint32_t)((float)us / 20000.0f * 65535)); };
+    setupLEDC(PIN_SERVO_PWM, ch, 50, 14);
+    auto wp = [&](uint16_t us) { ledcWrite(ch, (uint32_t)us * ((1<<14)-1) / 20000); };
     log("停止 1500us"); wp(1500); ledShow(0,0,50); delay(2000);
     log("左行 1000us 3秒"); wp(1000); ledShow(0,50,50); delay(3000);
     log("停止"); wp(1500); ledShow(0,0,50); delay(1000);
@@ -204,7 +204,7 @@ void setup() {
     delay(500);
     led.begin(); led.setBrightness(40); ledShow(0,0,0);
     Serial.println("\n============================");
-    Serial.println("  ESP32-S3 绕线器硬件自检 (7项)");
+    Serial.println("  ESP32 绕线器硬件自检 (7项)");
     Serial.println("============================\n");
 
     waitEnter("准备开始，连好线后按回车");

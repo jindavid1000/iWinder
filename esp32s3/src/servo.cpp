@@ -8,7 +8,16 @@ void ServoCtl::begin(uint8_t pin, uint16_t freq, uint8_t resBits) {
     _freq    = freq;
     _resBits = resBits;
     _maxDuty = (1 << resBits) - 1;
-    ledcSetup(_channel, _freq, _resBits);
+
+    uint32_t actualFreq = ledcSetup(_channel, _freq, _resBits);
+    if (actualFreq == 0) {
+        Serial.printf("[Servo] LEDC 初始化失败! channel=%d freq=%d bits=%d\n",
+                      _channel, _freq, _resBits);
+        return;  // 不 attach，避免绑定无效通道
+    }
+    Serial.printf("[Servo] LEDC OK: ch=%d freq=%d bits=%d actual=%d\n",
+                  _channel, _freq, _resBits, actualFreq);
+
     ledcAttachPin(_pin, _channel);
     writePulse(_pulseStop);
     _direction = DIR_NONE;
@@ -24,7 +33,9 @@ void ServoCtl::reattach(uint8_t pin) {
 }
 
 void ServoCtl::writePulse(uint16_t pulseUs) {
-    uint32_t duty = (uint32_t)((float)pulseUs / 20000.0f * _maxDuty);
+    if (!_initialized) return;
+    // 20ms 周期（50Hz），整数运算避免浮点精度问题
+    uint32_t duty = (uint32_t)pulseUs * _maxDuty / 20000;
     ledcWrite(_channel, duty);
 }
 
