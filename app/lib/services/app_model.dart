@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 import '../models/device_config.dart';
@@ -30,6 +31,10 @@ class AppModel extends ChangeNotifier {
   String? deviceSSID;
   bool deviceWifiConnected = false;
   String connectedIP = '';  // 实际连接用的 IP
+
+  // 已保存的设备局域网 IP
+  String? savedDeviceIP;
+  String? savedDeviceSSID;
 
   // 预览模式（模拟器调试用）
   bool previewMode = false;
@@ -94,6 +99,7 @@ class AppModel extends ChangeNotifier {
       wifiConnected = c;
       notifyListeners();
     };
+    _loadSavedDeviceIP();
     _comm.onScanResult = (devices) {
       scanResults = devices;
       notifyListeners();
@@ -101,6 +107,35 @@ class AppModel extends ChangeNotifier {
   }
 
   String get activeLink => _comm.activeLink;
+
+  // ===========================================================================
+  //  本地持久化（保存配网后的设备 IP）
+  // ===========================================================================
+
+  void _loadSavedDeviceIP() async {
+    final prefs = await SharedPreferences.getInstance();
+    savedDeviceIP = prefs.getString("device_ip");
+    savedDeviceSSID = prefs.getString("device_ssid");
+    notifyListeners();
+  }
+
+  void _saveDeviceIP(String ip, String ssid) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString("device_ip", ip);
+    await prefs.setString("device_ssid", ssid);
+    savedDeviceIP = ip;
+    savedDeviceSSID = ssid;
+    notifyListeners();
+  }
+
+  void clearSavedDeviceIP() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove("device_ip");
+    await prefs.remove("device_ssid");
+    savedDeviceIP = null;
+    savedDeviceSSID = null;
+    notifyListeners();
+  }
 
   // ===========================================================================
   //  BLE 扫描/连接
@@ -222,6 +257,10 @@ class AppModel extends ChangeNotifier {
           deviceWifiConnected = msg['connected'] as bool? ?? false;
           deviceIP = msg['ip'] as String?;
           deviceSSID = msg['ssid'] as String?;
+          // 配网成功后 ESP 回报局域网 IP，保存到本地
+          if (deviceWifiConnected && deviceIP != null && !deviceIP!.startsWith('192.168.4.')) {
+            _saveDeviceIP(deviceIP!, deviceSSID ?? '');
+          }
           break;
         case 'response':
           // 命令响应，可选处理

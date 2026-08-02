@@ -38,12 +38,12 @@ static bool        s_clientConnected = false;
 
 void Comms::begin() {
     WiFi.onEvent(onWiFiEvent);
+    WiFi.setSleep(false);
     bool staOk = wifiConnectSTA();
     if (!staOk) {
         Serial.println("[WiFi] 无凭据或 STA 失败，进入 AP 模式");
         wifiStartAP();
     }
-    WiFi.setSleep(false);
 }
 
 bool Comms::wifiConnectSTA() {
@@ -60,7 +60,9 @@ bool Comms::wifiConnectSTA() {
     }
 
     Serial.printf("[WiFi] STA 连接: %s\n", ssid.c_str());
-    WiFi.mode(WIFI_STA);
+    WiFi.mode(WIFI_AP_STA);  // APSTA：STA 连家庭 WiFi，AP 做兜底
+    delay(100);
+    WiFi.softAP("ESP-Winder");
     WiFi.begin(ssid.c_str(), pass.c_str());
 
     uint32_t start = millis();
@@ -77,15 +79,18 @@ bool Comms::wifiConnectSTA() {
         g_state.wifiConnected = true;
         g_state.wifiIP = ip.toString();
         g_state.wifiSSID = ssid;
-        if (!s_tcpServer) {
-            s_tcpServer = new WiFiServer(WIFI_TCP_PORT);
-            s_tcpServer->begin();
-            Serial.printf("[WiFi] TCP: %s:%d\n", ip.toString().c_str(), WIFI_TCP_PORT);
-        }
-        return true;
+    } else {
+        Serial.println("[WiFi] STA 失败，保持 AP 模式");
     }
-    Serial.println("[WiFi] STA 失败");
-    return false;
+
+    // 无论 STA 是否成功，都启动 TCP 服务器（AP 一定在运行）
+    if (!s_tcpServer) {
+        s_tcpServer = new WiFiServer(WIFI_TCP_PORT);
+        s_tcpServer->begin();
+    }
+    IPAddress apIP = WiFi.softAPIP();
+    Serial.printf("[WiFi] AP IP: %s, TCP: %d\n", apIP.toString().c_str(), WIFI_TCP_PORT);
+    return WiFi.status() == WL_CONNECTED;
 }
 
 void Comms::wifiStartAP() {
@@ -106,43 +111,56 @@ void Comms::wifiStartAP() {
             s_tcpServer->begin();
             Serial.printf("[WiFi] TCP: %s:%d\n", ip.toString().c_str(), WIFI_TCP_PORT);
         }
-    } else {
-        Serial.println("[WiFi] AP 启动失败!");
     }
 }
 
 void Comms::wifiConfigure(const String &ssid, const String &password) {
     Serial.printf("[WiFi] 配网: %s\n", ssid.c_str());
     g_storage.saveWiFi(ssid, password);
-    if (s_tcpClient) s_tcpClient.stop();
-    s_clientConnected = false;
-    WiFi.disconnect(true, true);
-    delay(200);
-    WiFi.mode(WIFI_STA);
+
+    // APSTA 模式：保持 AP 连接不断，同时连家庭 WiFi
+    // 手机通过 AP (192.168.4.1) 的 TCP 连接不会断
+    // ESP 连上家庭 WiFi 后立即回报局域网 IP
+    WiFi.mode(WIFI_AP_STA);
+    delay(100);
+    if (WiFi.softAPIP() == IPAddress(0, 0, 0, 0)) {
+        WiFi.softAP("ESP-Winder");  // 确保 AP 在运行
+    }
     WiFi.begin(ssid.c_str(), password.c_str());
+
     uint32_t start = millis();
     while (WiFi.status() != WL_CONNECTED &&
            (millis() - start) < (uint32_t)(WIFI_CONNECT_TIMEOUT_S * 1000)) {
         delay(500);
+        Serial.print(".");
     }
+    Serial.println();
+
     if (WiFi.status() == WL_CONNECTED) {
+        String staIP = WiFi.localIP().toString();
         g_state.wifiConnected = true;
-        g_state.wifiIP = WiFi.localIP().toString();
+        g_state.wifiIP = staIP;
         g_state.wifiSSID = ssid;
-        if (!s_tcpServer) {
-            s_tcpServer = new WiFiServer(WIFI_TCP_PORT);
-            s_tcpServer->begin();
+        Serial.printf("[WiFi] 配网成功: 局域网 IP=%s\n", staIP.c_str());
+
+        // 立即通过 AP 的 TCP 连接回报局域网 IP
+        String msg = "{\"type\":\"wifi_status\",\"connected\":true,\"ip\":\"" +
+                     staIP + "\",\"ssid\":\"" + ssid + "\"}\n";
+        if (s_tcpClient && s_tcpClient.connected()) {
+            s_tcpClient.print(msg);
+            Serial.println("[WiFi] 已回报局域网 IP 给 APP");
         }
-        Serial.printf("[WiFi] 配网成功: %s\n", g_state.wifiIP.c_str());
     } else {
-        g_state.wifiConnected = false;
-        Serial.println("[WiFi] 配网失败，回退 AP 模式");
-        wifiStartAP();
+        Serial.println("[WiFi] 配网失败，保持 AP+STA 模式");
     }
 }
 
 bool Comms::isWifiConnected() const {
-    if (WiFi.getMode() == WIFI_AP) {
+    if (WiFi.getMode() & WIFI_MODE_AP) {
+        if (WiFi.getMode() & WIFI_MODE_STA) {
+            // APSTA：STA 连上了就算在线
+            return WiFi.status() == WL_CONNECTED || WiFi.softAPIP() != IPAddress(0, 0, 0, 0);
+        }
         return WiFi.softAPIP() != IPAddress(0, 0, 0, 0);
     }
     return WiFi.status() == WL_CONNECTED;
