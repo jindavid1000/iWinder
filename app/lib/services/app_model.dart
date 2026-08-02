@@ -20,6 +20,12 @@ class AppModel extends ChangeNotifier {
   // 设备状态
   DeviceStatus status = DeviceStatus();
   DeviceConfig config = DeviceConfig();
+  int _targetSpeed = 50;  // 滑块设定速度，启动时用这个值
+  int get targetSpeed => _targetSpeed;
+  set targetSpeed(int v) {
+    _targetSpeed = v;
+    notifyListeners();
+  }
   List<String> presets = [];
   String? lastError;
 

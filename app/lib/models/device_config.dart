@@ -6,6 +6,7 @@ class DeviceConfig {
   int pinMotorPwm;
   int pinServoPwm;
   int pinEndstop;
+  int pinEndstopRight;
   int pinHallIdler;
   int pinHallSpool;
 
@@ -66,6 +67,7 @@ class DeviceConfig {
     this.pinMotorPwm = 4,
     this.pinServoPwm = 5,
     this.pinEndstop = 6,
+    this.pinEndstopRight = 32,
     this.pinHallIdler = 7,
     this.pinHallSpool = 8,
     this.hallIdlerMagnets = 2,
@@ -113,6 +115,7 @@ class DeviceConfig {
     c.pinMotorPwm = _i(m, 'pinMotorPwm', 4);
     c.pinServoPwm = _i(m, 'pinServoPwm', 5);
     c.pinEndstop = _i(m, 'pinEndstop', 6);
+    c.pinEndstopRight = _i(m, 'pinEndstopRight', 32);
     c.pinHallIdler = _i(m, 'pinHallIdler', 7);
     c.pinHallSpool = _i(m, 'pinHallSpool', 8);
     c.hallIdlerMagnets = _i(m, 'hallIdlerMagnets', 2);
@@ -160,6 +163,7 @@ class DeviceConfig {
     'pinMotorPwm': pinMotorPwm,
     'pinServoPwm': pinServoPwm,
     'pinEndstop': pinEndstop,
+    'pinEndstopRight': pinEndstopRight,
     'pinHallIdler': pinHallIdler,
     'pinHallSpool': pinHallSpool,
     'hallIdlerMagnets': hallIdlerMagnets,

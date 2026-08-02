@@ -32,9 +32,13 @@ private:
 
     // 排线状态
     uint16_t _roundTrips   = 0;    // 当前周期来回数
-    bool     _calibrating  = false;
     uint32_t _homingStartMs = 0;
     bool     _bootHoming   = true;  // 开机寻原点（超时软处理）
+
+    // 校准目标（双 Endstop）
+    bool     _calibGoRight  = false;  // true = 去右限位
+    bool     _calibReturning = false; // 限位已触发，正在返回起始位置
+    bool     _homeGoRight   = false;  // 寻原点/归位方向
 
     // 速度
     int      _targetSpeed  = 0;
@@ -45,7 +49,7 @@ private:
     void doHoming();
     void doPositioning();
     void doRunning(uint32_t dtMs);
-    void doCalibrating();
+    void doCalibrating(uint32_t dtMs);
     void doCompleted();
 
     void processTraverse(uint32_t dtMs);

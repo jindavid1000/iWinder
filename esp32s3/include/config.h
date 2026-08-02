@@ -13,6 +13,7 @@
 #define PIN_MOTOR_PWM         4       // 收线盘电机 MOS 管 PWM
 #define PIN_SERVO_PWM         5       // 排线舵机 PWM
 #define PIN_ENDSTOP           14       // Endstop 限位信号
+#define PIN_ENDSTOP_RIGHT     32       // Endstop 限位信号 (右)
 #define PIN_HALL_IDLER        13       // 霍尔 A — 从动轮
 #define PIN_HALL_SPOOL        27       // 霍尔 B — 料盘
 
@@ -48,9 +49,9 @@
 //  PWM 范围 500-2500us, 50Hz
 //============================================================================
 #define SERVO_STOP_PULSE          1500    // 停止中位 (us)
-#define SERVO_LEFT_PULSE          1000    // 左行 (向 Endstop, 约半速)
-#define SERVO_RIGHT_PULSE         2000    // 右行 (远离 Endstop, 约半速)
-#define SERVO_HOME_PULSE          1300    // 寻原点/校准慢速左行 (us)
+#define SERVO_LEFT_PULSE          500     // 左行满速 (向 Endstop)
+#define SERVO_RIGHT_PULSE         2500    // 右行满速 (远离 Endstop)
+#define SERVO_HOME_PULSE          500     // 寻原点/校准满速左行 (us)
 #define SERVO_PWM_FREQ            50      // PWM 频率 (Hz)
 #define SERVO_PULSE_MIN           500     // 满速左行极限 (us)
 #define SERVO_PULSE_MAX           2500    // 满速右行极限 (us)
@@ -133,6 +134,7 @@ struct DeviceConfig {
     uint8_t  pinMotorPwm;
     uint8_t  pinServoPwm;
     uint8_t  pinEndstop;
+    uint8_t  pinEndstopRight;
     uint8_t  pinHallIdler;
     uint8_t  pinHallSpool;
 
@@ -195,6 +197,7 @@ struct DeviceConfig {
         c.pinMotorPwm           = PIN_MOTOR_PWM;
         c.pinServoPwm           = PIN_SERVO_PWM;
         c.pinEndstop            = PIN_ENDSTOP;
+        c.pinEndstopRight       = PIN_ENDSTOP_RIGHT;
         c.pinHallIdler          = PIN_HALL_IDLER;
         c.pinHallSpool          = PIN_HALL_SPOOL;
 
