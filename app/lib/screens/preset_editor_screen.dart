@@ -51,18 +51,12 @@ class _PresetEditorScreenState extends State<PresetEditorScreen> {
               on: (v) => _cfg.pinServoPwm = v.round()),
             _Num(label: 'Endstop', val: _cfg.pinEndstop.toDouble(),
               on: (v) => _cfg.pinEndstop = v.round()),
-            _Num(label: '霍尔 A (从动轮)', val: _cfg.pinHallIdler.toDouble(),
-              on: (v) => _cfg.pinHallIdler = v.round()),
             _Num(label: '霍尔 B (料盘)', val: _cfg.pinHallSpool.toDouble(),
               on: (v) => _cfg.pinHallSpool = v.round()),
           ]),
           _Category(title: '传感器参数', children: [
-            _Num(label: '从动轮磁铁数', val: _cfg.hallIdlerMagnets.toDouble(),
-              on: (v) => _cfg.hallIdlerMagnets = v.round()),
             _Num(label: '料盘磁铁数', val: _cfg.hallSpoolMagnets.toDouble(),
               on: (v) => _cfg.hallSpoolMagnets = v.round()),
-            _Num(label: '从动轮直径 (mm)', val: _cfg.idlerDiameter,
-              on: (v) => _cfg.idlerDiameter = v),
           ]),
           _Category(title: '料盘参数', children: [
             _Num(label: '料盘外径 (mm)', val: _cfg.spoolOuterDiameter,
@@ -116,13 +110,7 @@ class _PresetEditorScreenState extends State<PresetEditorScreen> {
               on: (v) => _cfg.motorMaxSpeed = v.round()),
             _Num(label: '软启动时间 (ms)', val: _cfg.motorSoftStartMs.toDouble(),
               on: (v) => _cfg.motorSoftStartMs = v.round()),
-          ]),
-          _Category(title: '打滑检测', children: [
-            _Num(label: '容差阈值 (%)', val: _cfg.slipTolerance,
-              on: (v) => _cfg.slipTolerance = v),
-            _Num(label: '卡线超时 (s)', val: _cfg.stallTimeoutS,
-              on: (v) => _cfg.stallTimeoutS = v),
-          ]),
+         ]),
           _Category(title: '任务完成', children: [
             _DD(label: '完成模式', val: _cfg.autoStopMode, items: const [
               DropdownMenuItem(value: 0, child: Text('手动停止')),

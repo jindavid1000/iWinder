@@ -125,8 +125,7 @@ class _MonitoringGrid extends StatelessWidget {
       children: [
         _Metric(label: '转速', value: '${s.spoolRpm.toStringAsFixed(1)}', unit: 'RPM'),
         _Metric(label: '料盘圈数', value: '${s.spoolTurns.toStringAsFixed(1)}', unit: '圈'),
-        _Metric(label: '出线长度', value: '${s.lengthMeasured.toStringAsFixed(2)}', unit: 'm'),
-        _Metric(label: '理论长度', value: '${s.lengthTheoretical.toStringAsFixed(2)}', unit: 'm'),
+        _Metric(label: '出线长度', value: '${s.lengthTheoretical.toStringAsFixed(2)}', unit: 'm'),
         _Metric(label: '有效直径', value: '${s.effectiveDiameter.toStringAsFixed(1)}', unit: 'mm'),
         _Metric(label: '当前层数', value: '${s.currentLayer}', unit: '层'),
       ],

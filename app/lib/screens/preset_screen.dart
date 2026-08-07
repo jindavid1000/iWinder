@@ -38,7 +38,6 @@ class PresetScreen extends StatelessWidget {
                   _InfoRow(label: '线径', value: '${c.filamentDiameter} mm'),
                   _InfoRow(label: '料盘宽度', value: '${c.spoolWidth} mm'),
                   _InfoRow(label: '纸筒', value: c.spoolHasCardboard ? '有 (${c.spoolCoreDiaWithCard} mm)' : '无 (${c.spoolCoreDiaNoCard} mm)'),
-                  _InfoRow(label: '从动轮直径', value: '${c.idlerDiameter} mm'),
                   _InfoRow(label: '校准间隔', value: '${c.calIntervalRounds} 来回'),
                   _InfoRow(label: '默认速度', value: '${c.motorDefaultSpeed}%'),
                 ],
