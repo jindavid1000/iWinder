@@ -7,13 +7,10 @@ class DeviceConfig {
   int pinServoPwm;
   int pinEndstop;
   int pinEndstopRight;
-  int pinHallIdler;
   int pinHallSpool;
 
   // 传感器
-  int hallIdlerMagnets;
   int hallSpoolMagnets;
-  double idlerDiameter;
   int hallDebounceUs;
   int endstopDebounceUs;
 
@@ -48,10 +45,6 @@ class DeviceConfig {
   int motorMaxSpeed;
   int motorSoftStartMs;
 
-  // 打滑
-  double slipTolerance;
-  double stallTimeoutS;
-
   // 任务完成
   int autoStopMode;
   double targetLengthM;
@@ -68,11 +61,8 @@ class DeviceConfig {
     this.pinServoPwm = 5,
     this.pinEndstop = 6,
     this.pinEndstopRight = 32,
-    this.pinHallIdler = 7,
     this.pinHallSpool = 8,
-    this.hallIdlerMagnets = 2,
     this.hallSpoolMagnets = 4,
-    this.idlerDiameter = 10.0,
     this.hallDebounceUs = 5000,
     this.endstopDebounceUs = 20000,
     this.spoolOuterDiameter = 200.0,
@@ -98,8 +88,6 @@ class DeviceConfig {
     this.motorDefaultSpeed = 50,
     this.motorMaxSpeed = 100,
     this.motorSoftStartMs = 1000,
-    this.slipTolerance = 10.0,
-    this.stallTimeoutS = 3.0,
     this.autoStopMode = 0,
     this.targetLengthM = 0.0,
     this.targetTurns = 0,
@@ -116,11 +104,8 @@ class DeviceConfig {
     c.pinServoPwm = _i(m, 'pinServoPwm', 5);
     c.pinEndstop = _i(m, 'pinEndstop', 6);
     c.pinEndstopRight = _i(m, 'pinEndstopRight', 32);
-    c.pinHallIdler = _i(m, 'pinHallIdler', 7);
     c.pinHallSpool = _i(m, 'pinHallSpool', 8);
-    c.hallIdlerMagnets = _i(m, 'hallIdlerMagnets', 2);
     c.hallSpoolMagnets = _i(m, 'hallSpoolMagnets', 4);
-    c.idlerDiameter = _d(m, 'idlerDiameter', 10.0);
     c.hallDebounceUs = _i(m, 'hallDebounceUs', 5000);
     c.endstopDebounceUs = _i(m, 'endstopDebounceUs', 20000);
     c.spoolOuterDiameter = _d(m, 'spoolOuterDiameter', 200.0);
@@ -146,8 +131,6 @@ class DeviceConfig {
     c.motorDefaultSpeed = _i(m, 'motorDefaultSpeed', 50);
     c.motorMaxSpeed = _i(m, 'motorMaxSpeed', 100);
     c.motorSoftStartMs = _i(m, 'motorSoftStartMs', 1000);
-    c.slipTolerance = _d(m, 'slipTolerance', 10.0);
-    c.stallTimeoutS = _d(m, 'stallTimeoutS', 3.0);
     c.autoStopMode = _i(m, 'autoStopMode', 0);
     c.targetLengthM = _d(m, 'targetLengthM', 0.0);
     c.targetTurns = _i(m, 'targetTurns', 0);
@@ -164,11 +147,8 @@ class DeviceConfig {
     'pinServoPwm': pinServoPwm,
     'pinEndstop': pinEndstop,
     'pinEndstopRight': pinEndstopRight,
-    'pinHallIdler': pinHallIdler,
     'pinHallSpool': pinHallSpool,
-    'hallIdlerMagnets': hallIdlerMagnets,
     'hallSpoolMagnets': hallSpoolMagnets,
-    'idlerDiameter': idlerDiameter,
     'hallDebounceUs': hallDebounceUs,
     'endstopDebounceUs': endstopDebounceUs,
     'spoolOuterDiameter': spoolOuterDiameter,
@@ -194,8 +174,6 @@ class DeviceConfig {
     'motorDefaultSpeed': motorDefaultSpeed,
     'motorMaxSpeed': motorMaxSpeed,
     'motorSoftStartMs': motorSoftStartMs,
-    'slipTolerance': slipTolerance,
-    'stallTimeoutS': stallTimeoutS,
     'autoStopMode': autoStopMode,
     'targetLengthM': targetLengthM,
     'targetTurns': targetTurns,
@@ -227,8 +205,6 @@ class DeviceStatus {
   int speed = 0;
   double spoolRpm = 0;
   double spoolTurns = 0;
-  double idlerTurns = 0;
-  double lengthMeasured = 0;
   double lengthTheoretical = 0;
   double effectiveDiameter = 0;
   int currentLayer = 0;
@@ -247,9 +223,7 @@ class DeviceStatus {
     s.speed = (m['speed'] as num?)?.toInt() ?? 0;
     s.spoolRpm = (m['spool_rpm'] as num?)?.toDouble() ?? 0;
     s.spoolTurns = (m['spool_turns'] as num?)?.toDouble() ?? 0;
-    s.idlerTurns = (m['idler_turns'] as num?)?.toDouble() ?? 0;
-    s.lengthMeasured = (m['length_measured'] as num?)?.toDouble() ?? 0;
-    s.lengthTheoretical = (m['length_theoretical'] as num?)?.toDouble() ?? 0;
+    s.lengthTheoretical = (m['length'] as num?)?.toDouble() ?? 0;
     s.effectiveDiameter = (m['effective_diameter'] as num?)?.toDouble() ?? 0;
     s.currentLayer = (m['current_layer'] as num?)?.toInt() ?? 0;
     s.traversePos = (m['traverse_pos'] as num?)?.toDouble() ?? 0;

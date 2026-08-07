@@ -26,18 +26,12 @@ class SettingsScreen extends StatelessWidget {
                 onChanged: (v) => model.config.pinEndstop = v.round()),
             _NumField(label: 'Endstop 右', value: model.config.pinEndstopRight.toDouble(),
                 onChanged: (v) => model.config.pinEndstopRight = v.round()),
-            _NumField(label: '霍尔 A (从动轮)', value: model.config.pinHallIdler.toDouble(),
-                onChanged: (v) => model.config.pinHallIdler = v.round()),
             _NumField(label: '霍尔 B (料盘)', value: model.config.pinHallSpool.toDouble(),
                 onChanged: (v) => model.config.pinHallSpool = v.round()),
           ]),
           _ParamCategory(title: '传感器参数', children: [
-            _NumField(label: '从动轮磁铁数', value: model.config.hallIdlerMagnets.toDouble(),
-                onChanged: (v) => model.config.hallIdlerMagnets = v.round()),
             _NumField(label: '料盘磁铁数', value: model.config.hallSpoolMagnets.toDouble(),
                 onChanged: (v) => model.config.hallSpoolMagnets = v.round()),
-            _NumField(label: '从动轮直径 (mm)', value: model.config.idlerDiameter,
-                onChanged: (v) => model.config.idlerDiameter = v),
           ]),
           _ParamCategory(title: '料盘参数', children: [
             _NumField(label: '料盘外径 (mm)', value: model.config.spoolOuterDiameter,
@@ -82,6 +76,66 @@ class SettingsScreen extends StatelessWidget {
             _NumField(label: '左行速度 (mm/s)', value: model.config.servoTraverseSpeedLeft,
                 onChanged: (v) => model.config.servoTraverseSpeedLeft = v),
           ]),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [
+                    Icon(Icons.speed, color: Theme.of(context).colorScheme.primary),
+                    const SizedBox(width: 8),
+                    Text('舵机速度标定', style: Theme.of(context).textTheme.titleMedium),
+                  ]),
+                  const SizedBox(height: 8),
+                  const Text(
+                    '自动测量排线左右行速度（需双 Endstop）。标定时排线会满速左右运动 3 个来回。',
+                    style: TextStyle(fontSize: 12, color: Colors.grey, height: 1.5),
+                  ),
+                  const SizedBox(height: 8),
+                  if (model.config.servoTraverseSpeedRight > 0 || model.config.servoTraverseSpeedLeft > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        '当前: 右行 ${model.config.servoTraverseSpeedRight.toStringAsFixed(1)} mm/s  左行 ${model.config.servoTraverseSpeedLeft.toStringAsFixed(1)} mm/s',
+                        style: TextStyle(fontSize: 13, color: Colors.green.shade700),
+                      ),
+                    ),
+                  FilledButton.icon(
+                    onPressed: model.status.state == 'idle'
+                        ? () {
+                            showDialog(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                title: const Text('舵机速度标定'),
+                                content: const Text('排线将满速左右运动 3 个来回来自动测量速度。确认开始？'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx),
+                                    child: const Text('取消'),
+                                  ),
+                                  FilledButton(
+                                    onPressed: () {
+                                      Navigator.pop(ctx);
+                                      model.sendCalibrateServo();
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('标定已开始，请等待完成')),
+                                      );
+                                    },
+                                    child: const Text('开始'),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+                        : null,
+                    icon: const Icon(Icons.play_arrow),
+                    label: Text(model.status.state == 'servo_calib' ? '标定中...' : '开始标定'),
+                  ),
+                ],
+              ),
+            ),
+          ),
           _ParamCategory(title: '电机参数', children: [
             _NumField(label: '最低转速 (%)', value: model.config.motorMinSpeed.toDouble(),
                 onChanged: (v) => model.config.motorMinSpeed = v.round()),
@@ -91,13 +145,7 @@ class SettingsScreen extends StatelessWidget {
                 onChanged: (v) => model.config.motorMaxSpeed = v.round()),
             _NumField(label: '软启动时间 (ms)', value: model.config.motorSoftStartMs.toDouble(),
                 onChanged: (v) => model.config.motorSoftStartMs = v.round()),
-          ]),
-          _ParamCategory(title: '打滑检测', children: [
-            _NumField(label: '容差阈值 (%)', value: model.config.slipTolerance,
-                onChanged: (v) => model.config.slipTolerance = v),
-            _NumField(label: '卡线超时 (s)', value: model.config.stallTimeoutS,
-                onChanged: (v) => model.config.stallTimeoutS = v),
-          ]),
+         ]),
           _ParamCategory(title: '任务完成', children: [
             _DropdownField(label: '完成模式', value: model.config.autoStopMode,
               items: const [

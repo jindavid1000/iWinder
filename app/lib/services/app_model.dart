@@ -58,7 +58,6 @@ class AppModel extends ChangeNotifier {
       status.speed = config.motorDefaultSpeed;
       status.spoolRpm = 0;
       status.spoolTurns = 0;
-      status.lengthMeasured = 0;
       status.lengthTheoretical = 0;
       status.effectiveDiameter = config.spoolHasCardboard
           ? config.spoolCoreDiaWithCard
@@ -125,35 +124,43 @@ class AppModel extends ChangeNotifier {
     mdnsScanning = true;
     notifyListeners();
     try {
-      final socket = await RawDatagramSocket.bind('0.0.0.0', 8888);
+      final socket = await RawDatagramSocket.bind('0.0.0.0', 0);
       socket.broadcastEnabled = true;
-      final result = socket.timeout(timeout, onTimeout: (sink) {
+
+      // 主动发送发现广播，ESP32 收到后单播回复（避免 Android 丢弃广播包的问题）
+      for (int i = 0; i < 3; i++) {
+        socket.send(
+          utf8.encode('DISCOVER_WINDER'),
+          InternetAddress('255.255.255.255'),
+          8888,
+        );
+        if (i < 2) await Future.delayed(const Duration(milliseconds: 600));
+      }
+
+      // 监听 ESP32 的单播回复
+      String? foundIP;
+      await for (final event in socket.timeout(timeout, onTimeout: (sink) {
         sink.close();
-      }).firstWhere(
-        (event) {
-          if (event == RawSocketEvent.read) {
-            final datagram = socket.receive();
-            if (datagram != null) {
-              final msg = String.fromCharCodes(datagram.data);
-              if (msg.startsWith('WINDER:')) {
-                return true;
+      })) {
+        if (event == RawSocketEvent.read) {
+          final dg = socket.receive();
+          if (dg != null) {
+            final msg = String.fromCharCodes(dg.data);
+            // WINDER:192.168.1.105:8080
+            if (msg.startsWith('WINDER:')) {
+              final parts = msg.split(':');
+              if (parts.length >= 2) {
+                foundIP = parts[1];
+                break;
               }
             }
           }
-          return false;
-        },
-      );
-      await result;
-      final datagram = socket.receive();
+        }
+      }
       socket.close();
       mdnsScanning = false;
       notifyListeners();
-      if (datagram != null) {
-        final msg = String.fromCharCodes(datagram.data);
-        // WINDER:192.168.1.105:8080
-        final parts = msg.split(':');
-        if (parts.length >= 2) return parts[1];
-      }
+      return foundIP;
     } catch (e) {
       print('UDP 发现失败: $e');
     }
@@ -266,6 +273,7 @@ class AppModel extends ChangeNotifier {
   void sendGetWifiStatus() => _send({'cmd': 'get_wifi_status'});
   void sendClearError() => _send({'cmd': 'clear_error'});
   void sendFactoryReset() => _send({'cmd': 'factory_reset'});
+  void sendCalibrateServo() => _send({'cmd': 'calibrate_servo'});
 
   // 下发当前配置到 ESP
   void pushConfig() {
@@ -317,6 +325,9 @@ class AppModel extends ChangeNotifier {
           }
           break;
         case 'response':
+          if (msg['ok'] == true && msg['cmd'] == 'calibrate_servo') {
+            // 标定已开始，等结果
+          }
           // 命令响应，可选处理
           if (msg['ok'] == true && msg['cmd'] == 'save_preset') {
             sendListPresets();
@@ -324,6 +335,14 @@ class AppModel extends ChangeNotifier {
           if (msg['ok'] == true && msg['cmd'] == 'load_preset') {
             sendGetParams();
           }
+          break;
+        case 'servo_calib_result':
+          final sr = (msg['speed_right'] as num?)?.toDouble() ?? 0;
+          final sl = (msg['speed_left'] as num?)?.toDouble() ?? 0;
+          config.servoTraverseSpeedRight = sr;
+          config.servoTraverseSpeedLeft = sl;
+          lastError = null;
+          notifyListeners();
           break;
       }
       notifyListeners();
