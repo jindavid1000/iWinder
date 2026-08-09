@@ -1,0 +1,25 @@
+# macOS
+.DS_Store
+
+# Flutter / Dart
+app/.dart_tool/
+app/.flutter-plugins-dependencies
+app/.flutter-plugins
+app/build/
+app/.idea/
+app/android/local.properties
+app/android/.gradle/
+app/android/app/debug/
+app/android/app/profile/
+app/android/app/release/
+app/**/*.iml
+
+# PlatformIO
+esp32/.pio/
+esp32/.vscode/
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+*.swo

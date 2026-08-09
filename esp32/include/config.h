@@ -19,7 +19,7 @@
 //============================================================================
 //  4.3  传感器参数
 //============================================================================
-#define HALL_SPOOL_MAGNETS        4       // 料盘单圈磁铁数
+#define HALL_SPOOL_MAGNETS        8       // 料盘单圈磁铁数
 #define HALL_DEBOUNCE_US          5000    // 霍尔去抖动 (us)
 #define ENDSTOP_DEBOUNCE_US       20000   // Endstop 去抖动 (us)
 
@@ -38,7 +38,7 @@
 #define TRAVERSE_LEFT_START       0.0f    // 绕线左起始位置 (mm，相对于原点)
 #define TRAVERSE_RIGHT_END        68.0f   // 绕线右终止换向位置 (mm)
 #define TRAVERSE_DIST_PER_REV     1.75f   // 料盘每转一圈排线移动距离 (mm)
-#define LEAD_SCREW_PITCH          8.0f    // 丝杆导程 (mm/圈, T8)
+#define LEAD_SCREW_PITCH          22.0f   // 丝杆导程 (mm/圈, T8 四头)
 #define CAL_INTERVAL_ROUNDS       3       // 每 N 个来回校准一次
 
 //============================================================================
@@ -106,7 +106,7 @@
 //============================================================================
 #define MOTOR_DRIVER_MODEL        "IRF520"
 #define MOTOR_RATED_VOLTAGE       6.0f
-#define MOTOR_RATED_RPM           300
+#define MOTOR_RATED_RPM           40
 #define SERVO_MODEL_NAME          "鑫辉18KG"
 
 //============================================================================
