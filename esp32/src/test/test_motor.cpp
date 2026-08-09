@@ -10,13 +10,13 @@ void setup() {
 
     log("软启动渐快...");
     ledOn();
-    for (int d = 0; d <= 512; d += 10) { ledcWrite(ch, d); delay(20); }
+    for (int d = 0; d <= 1023; d += 20) { ledcWrite(ch, d); delay(20); }
 
-    log("50% 运行 3秒");
+    log("100% 运行 3秒");
     delay(3000);
 
     log("渐慢停止");
-    for (int d = 512; d >= 0; d -= 10) { ledcWrite(ch, d); delay(20); }
+    for (int d = 1023; d >= 0; d -= 20) { ledcWrite(ch, d); delay(20); }
     ledcWrite(ch, 0);
     ledOff();
     log("测试完成");
