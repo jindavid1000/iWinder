@@ -4,6 +4,12 @@
 
 ESP32 主控 + 连续旋转舵机排线 + 直流电机收线，手机 APP 无线控制，支持蓝牙和 WiFi 双模连接、实时监控、参数预设。
 
+根据废改实验室的散料绕线器+手摇+电动进行改造，此绕线器几乎可以绕全部尺寸的料盘，且大部分参数支持自定义
+
+https://makerworld.com.cn/zh/models/2379707-san-liao-rao-xian-qi-shou-yao-dian-dong?from=search#profileId-2700945
+
+https://creativecommons.org/licenses/by-nc/4.0/
+
 ---
 
 ## 项目结构
@@ -170,12 +176,15 @@ ESP32 上电后会同时启动 **WiFi 热点（ESP-Winder）** 和尝试连接�
 所有参数都支持保存为预设方案（最多 10 组），一键切换。ESP32 断电后参数保存在 NVS 中不会丢失。
 
 ---
+## 可选配件
 
-## 开发文档
+靴不会
 
-详细的硬件设计、通信协议、配置参数说明请见 [设定/描述.md](设定/描述.md)。
+耗材旋转支架
 
----
+https://makerworld.com.cn/zh/models/1705115-hao-cai-xuan-zhuan-zhi-jia?from=search#profileId-1876547
+
+（我在站内找到的最省料的耗材转盘，可以用来当散料从转盘，上面放散料）
 
 ## License
 
