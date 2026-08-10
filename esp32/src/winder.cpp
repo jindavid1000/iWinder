@@ -14,21 +14,12 @@ Winder g_winder;
 // RPM 脉冲窗口
 static uint32_t s_lastSpoolPulses = 0;
 
-// Endstop 触发标志（ISR 设置）
-static volatile bool s_endstopHit = false;       // 左限位
-static volatile bool s_endstopHitRight = false;  // 右限位
-static void IRAM_ATTR onEndstopHit(bool isRight) {
-    if (isRight) s_endstopHitRight = true;
-    else         s_endstopHit = true;
-}
-
 // ============================================================================
 //  初始化
 // ============================================================================
 
 void Winder::begin() {
     applyConfig();
-    g_sensors.onEndstop(onEndstopHit);
     _lastTickMs = millis();
 }
 
@@ -82,6 +73,8 @@ void Winder::startTask(int speedPct) {
         g_state.spoolTurns = 0;
         g_state.lengthTheoretical = 0;
         g_state.roundTrips = 0;
+        g_servo.moveRight();  // 回右原点（原点 = 右限位）
+        _homeGoRight = true;
         setState(STATE_HOMING);
         _homingStartMs = millis();
     } else if (g_state.state == STATE_PAUSED) {
@@ -110,12 +103,9 @@ void Winder::resumeTask() {
 void Winder::goHome() {
     if (g_state.state != STATE_IDLE && g_state.state != STATE_PAUSED) return;
     g_motor.stop();
-    // 根据当前位置选最近的端点
-    float pos = g_servo.getPosition();
-    float mid = (g_config.traverseLeftStart + g_config.traverseRightEnd) / 2.0f;
-    _homeGoRight = (pos > mid);
-    if (_homeGoRight) g_servo.moveRight();
-    else              g_servo.moveHome();
+    _targetSpeed = 0;  // 仅回原点，不开始绕线
+    _homeGoRight = true;
+    g_servo.moveRight();  // 回右原点（右限位）
     setState(STATE_HOMING);
     _homingStartMs = millis();
 }
@@ -141,7 +131,7 @@ void Winder::clearError() {
 void Winder::startServoCalib() {
     if (g_state.state != STATE_IDLE) return;
 
-    _scalibDist = g_config.traverseRightEnd - g_config.traverseLeftStart;
+    _scalibDist = TRAVEL_RANGE_MM;  // 左右限位之间的实际物理距离
     if (_scalibDist < 1.0f) {
         setError(ERR_SENSOR, "标定距离异常，检查排线参数");
         return;
@@ -162,14 +152,11 @@ void Winder::startServoCalib() {
 }
 
 void Winder::doServoCalib() {
-    bool leftHit  = s_endstopHit;
-    bool rightHit = s_endstopHitRight;
 
     switch (_scalibPhase) {
         // ---- 阶段 0: 归位左限位 ----
         case SCALIB_HOME:
-            if (leftHit) {
-                s_endstopHit = false;
+            if (g_sensors.isLeftEndstopPressed()) {
                 g_servo.stop();
                 g_servo.resetPosition();
                 Serial.println("[标定] 左限位已确认，开始右行");
@@ -184,8 +171,7 @@ void Winder::doServoCalib() {
 
         // ---- 阶段 1: 满速右行 ----
         case SCALIB_GO_RIGHT:
-            if (rightHit) {
-                s_endstopHitRight = false;
+            if (g_sensors.isRightEndstopPressed()) {
                 g_servo.stop();
                 g_servo.setPosition(g_config.traverseRightEnd);
 
@@ -209,8 +195,7 @@ void Winder::doServoCalib() {
 
         // ---- 阶段 2: 满速左行 ----
         case SCALIB_GO_LEFT:
-            if (leftHit) {
-                s_endstopHit = false;
+            if (g_sensors.isLeftEndstopPressed()) {
                 g_servo.stop();
                 g_servo.resetPosition();
 
@@ -225,8 +210,8 @@ void Winder::doServoCalib() {
                     _scalibFirstLeft = speed;
 
                     // 第一轮合理性判断
-                    if (_scalibFirstRight < 0.5f || _scalibFirstRight > 200.0f ||
-                        _scalibFirstLeft  < 0.5f || _scalibFirstLeft  > 200.0f) {
+                    if (_scalibFirstRight < 0.5f || _scalibFirstRight > 500.0f ||
+                        _scalibFirstLeft  < 0.5f || _scalibFirstLeft  > 500.0f) {
                         setError(ERR_SENSOR, "标定数值异常，检查限位/机械");
                         return;
                     }
@@ -307,14 +292,6 @@ void Winder::update() {
         _lastReportMs = now;
         reportStatus();
     }
-
-    // 清除非寻原点/校准时的 endstop 事件
-    if (g_state.state != STATE_HOMING &&
-        g_state.state != STATE_CALIBRATING &&
-        g_state.state != STATE_SERVO_CALIB) {
-        s_endstopHit = false;
-        s_endstopHitRight = false;
-    }
 }
 
 // ============================================================================
@@ -322,27 +299,23 @@ void Winder::update() {
 // ============================================================================
 
 void Winder::doHoming() {
-    bool hit = _homeGoRight ? s_endstopHitRight : s_endstopHit;
+    bool hit = _homeGoRight ? g_sensors.isRightEndstopPressed()
+                            : g_sensors.isLeftEndstopPressed();
 
     if (hit) {
         if (_homeGoRight) {
-            s_endstopHitRight = false;
             g_servo.stop();
             g_servo.setPosition(g_config.traverseRightEnd);
-            Serial.println("[Winder] 右原点已确认");
+            Serial.println("[Winder] 右原点已确认（原点 = 右限位）");
         } else {
-            s_endstopHit = false;
             g_servo.stop();
             g_servo.resetPosition();
-            Serial.println("[Winder] 左原点已确认");
+            Serial.println("[Winder] 左限位已确认");
         }
         _bootHoming = false;
 
-        if (_targetSpeed > 0) {
-            setState(STATE_POSITIONING);
-        } else {
-            setState(STATE_IDLE);
-        }
+        // 总是进入定位阶段
+        setState(STATE_POSITIONING);
     }
 
     if ((millis() - _homingStartMs) > (uint32_t)(HOMING_TIMEOUT_S * 1000)) {
@@ -363,21 +336,43 @@ void Winder::doHoming() {
 
 void Winder::doPositioning() {
     float target = g_config.traverseLeftStart;
+    g_servo.updatePosition(5);  // 更新位置估算
     float pos = g_servo.getPosition();
 
+    // 安全保护：碰到限位立刻停
+    if (g_servo.getDirection() == DIR_RIGHT && g_sensors.isRightEndstopPressed()) {
+        g_servo.stop();
+        g_servo.setPosition(g_config.traverseRightEnd);
+        Serial.println("[Winder] 定位中触碰右限位");
+    } else if (g_servo.getDirection() == DIR_LEFT && g_sensors.isLeftEndstopPressed()) {
+        g_servo.stop();
+        g_servo.resetPosition();
+        Serial.println("[Winder] 定位中触碰左限位");
+    }
+
+    pos = g_servo.getPosition();
     if (pos >= target - 0.5f && pos <= target + 0.5f) {
         g_servo.stop();
-        g_state.calibCountdown = g_config.calIntervalRounds;
-        _roundTrips = 0;
-        g_motor.setSpeedPct(_targetSpeed);
-        g_state.runStartMs = millis();
-        g_servo.moveRight();
-        setState(STATE_RUNNING);
-        Serial.println("[Winder] 开始绕线");
-    } else if (pos < target) {
-        g_servo.moveRight();
+        if (_targetSpeed > 0) {
+            // 有速度 → 开始绕线，从起始位置向右移动
+            g_state.calibCountdown = g_config.calIntervalRounds;
+            _roundTrips = 0;
+            g_motor.setSpeedPct(_targetSpeed);
+            g_state.runStartMs = millis();
+            g_servo.moveRight();
+            setState(STATE_RUNNING);
+            Serial.println("[Winder] 开始绕线");
+        } else {
+            // 无速度 → 仅回原点，待机
+            setState(STATE_IDLE);
+            Serial.println("[Winder] 已回到起始位置，待机");
+        }
+    } else if (pos > target) {
+        // 在右边 → 向左移动到起始位置
+        if (g_servo.getDirection() != DIR_LEFT) g_servo.moveLeft();
     } else {
-        g_servo.moveLeft();
+        // 在左边 → 向右移动到起始位置
+        if (g_servo.getDirection() != DIR_RIGHT) g_servo.moveRight();
     }
 }
 
@@ -403,6 +398,16 @@ void Winder::doRunning(uint32_t dtMs) {
         g_state.spoolRpm = (newSpool / (float)g_config.hallSpoolMagnets) / dtSec * 60.0f;
     }
 
+    // 调试：每 2 秒打印一次脉冲/计数/配置状态
+    static uint32_t lastDbgMs = 0;
+    if (millis() - lastDbgMs > 2000) {
+        lastDbgMs = millis();
+        Serial.printf("[DBG] pulses=%u new=%u totalSpool=%u hallMagnets=%u pinHall=%u\n",
+                      g_state.spoolPulses, newSpool,
+                      g_sensors.getTotalSpoolPulses(),
+                      g_config.hallSpoolMagnets, g_config.pinHallSpool);
+    }
+
     processTraverse(dtMs);
     processAutoStop();
 }
@@ -415,36 +420,67 @@ void Winder::processTraverse(uint32_t dtMs) {
     float pos   = g_servo.getPosition();
     float right = g_config.traverseRightEnd;
     float left  = g_config.traverseLeftStart;
-    float mid   = (left + right) / 2.0f;
 
-    // 右端换向
-    if (g_servo.getDirection() == DIR_RIGHT && pos >= right) {
-        g_servo.moveLeft();
-        Serial.printf("[Winder] 右端换向 pos=%.1f\n", pos);
+    // ===== 根据 RPM 计算舵机速度比例 =====
+    // 目标：料盘每转一圈，排线移动一个线径的距离
+    // 所需排线速度 (mm/s) = RPM/60 * filamentDiameter
+    // 舵机满速速度 (mm/s) = servoTraverseSpeed
+    // 速度比例 = 所需速度 / 满速速度
+    float rpm = g_state.spoolRpm;
+    float neededSpeed = (rpm / 60.0f) * g_config.filamentDiameter;
+    float servoFullSpeed = (g_servo.getDirection() == DIR_LEFT) ? g_config.servoTraverseSpeedLeft
+                                                                  : g_config.servoTraverseSpeedRight;
+    if (servoFullSpeed > 0.1f && neededSpeed > 0) {
+        float frac = neededSpeed / servoFullSpeed;
+        g_servo.setSpeedFraction(frac);
     }
 
-    // 左端换向
-    if (g_servo.getDirection() == DIR_LEFT && pos <= left) {
+    // 物理限位安全保护（优先于位置估算换向）
+    if (g_servo.getDirection() == DIR_RIGHT && g_sensors.isRightEndstopPressed()) {
+        g_servo.moveLeft();
+        g_servo.setPosition(right);
+        Serial.printf("[Winder] 右限位触发换向 pos=%.1f\n", pos);
+    } else if (g_servo.getDirection() == DIR_LEFT && g_sensors.isLeftEndstopPressed()) {
         g_servo.moveRight();
+        g_servo.setPosition(left);
         _roundTrips++;
         g_state.roundTrips = _roundTrips;
         g_state.calibCountdown = (g_config.calIntervalRounds > _roundTrips)
                                 ? (g_config.calIntervalRounds - _roundTrips) : 0;
-        Serial.printf("[Winder] 左端换向 pos=%.1f, 来回=%d, 距校准=%d\n",
-                      pos, _roundTrips, g_state.calibCountdown);
+        Serial.printf("[Winder] 左限位触发换向 pos=%.1f, 来回=%d\n", pos, _roundTrips);
 
-        // 周期性校准 — 去最近的 endstop
         if (_roundTrips >= g_config.calIntervalRounds) {
             setState(STATE_CALIBRATING);
             g_motor.stop();
-            _calibGoRight = (pos > mid);
+            _calibGoRight = true;  // 校准去右限位（原点）
             _calibReturning = false;
-            if (_calibGoRight) {
+            g_servo.moveRight();
+            Serial.println("[Winder] 校准: 去右限位（原点）");
+            return;
+        }
+    } else {
+        // 位置估算换向（兜底）
+        if (g_servo.getDirection() == DIR_RIGHT && pos >= right) {
+            g_servo.moveLeft();
+            Serial.printf("[Winder] 右端换向 pos=%.1f\n", pos);
+        }
+
+        if (g_servo.getDirection() == DIR_LEFT && pos <= left) {
+            g_servo.moveRight();
+            _roundTrips++;
+            g_state.roundTrips = _roundTrips;
+            g_state.calibCountdown = (g_config.calIntervalRounds > _roundTrips)
+                                    ? (g_config.calIntervalRounds - _roundTrips) : 0;
+            Serial.printf("[Winder] 左端换向 pos=%.1f, 来回=%d, 距校准=%d\n",
+                          pos, _roundTrips, g_state.calibCountdown);
+
+            if (_roundTrips >= g_config.calIntervalRounds) {
+                setState(STATE_CALIBRATING);
+                g_motor.stop();
+                _calibGoRight = true;  // 校准去右限位（原点）
+                _calibReturning = false;
                 g_servo.moveRight();
-                Serial.println("[Winder] 校准: 去右限位");
-            } else {
-                g_servo.moveHome();
-                Serial.println("[Winder] 校准: 去左限位");
+                Serial.println("[Winder] 校准: 去右限位（原点）");
             }
         }
     }
@@ -495,14 +531,13 @@ void Winder::doCalibrating(uint32_t dtMs) {
 
     if (!_calibReturning) {
         // 阶段 1: 前往目标限位
-        bool hit = _calibGoRight ? s_endstopHitRight : s_endstopHit;
+        bool hit = _calibGoRight ? g_sensors.isRightEndstopPressed()
+                                 : g_sensors.isLeftEndstopPressed();
         if (hit) {
             if (_calibGoRight) {
-                s_endstopHitRight = false;
                 g_servo.setPosition(g_config.traverseRightEnd);
                 Serial.println("[Winder] 右限位触发，位置校正");
             } else {
-                s_endstopHit = false;
                 g_servo.resetPosition();
                 Serial.println("[Winder] 左限位触发，位置校正");
             }
@@ -537,23 +572,19 @@ void Winder::doCompleted() {
     static bool homingAfterComplete = false;
     if (!homingAfterComplete) {
         homingAfterComplete = true;
-        // 选最近的端点归位
-        float pos = g_servo.getPosition();
-        float mid = (g_config.traverseLeftStart + g_config.traverseRightEnd) / 2.0f;
-        _homeGoRight = (pos > mid);
-        if (_homeGoRight) g_servo.moveRight();
-        else              g_servo.moveHome();
+        // 始终回右原点
+        _homeGoRight = true;
+        g_servo.moveRight();
         _homingStartMs = millis();
         Serial.println("[Winder] 任务完成，归位中...");
     }
 
-    bool hit = _homeGoRight ? s_endstopHitRight : s_endstopHit;
+    bool hit = _homeGoRight ? g_sensors.isRightEndstopPressed()
+                            : g_sensors.isLeftEndstopPressed();
     if (hit) {
         if (_homeGoRight) {
-            s_endstopHitRight = false;
             g_servo.setPosition(g_config.traverseRightEnd);
         } else {
-            s_endstopHit = false;
             g_servo.resetPosition();
         }
         g_servo.stop();

@@ -40,6 +40,7 @@
 #define TRAVERSE_DIST_PER_REV     1.75f   // 料盘每转一圈排线移动距离 (mm)
 #define LEAD_SCREW_PITCH          22.0f   // 丝杆导程 (mm/圈, T8 四头)
 #define CAL_INTERVAL_ROUNDS       3       // 每 N 个来回校准一次
+#define TRAVEL_RANGE_MM           80.0f   // 左右限位之间的实际物理距离 (mm，用于舵机标定)
 
 //============================================================================
 //  4.6  舵机参数 — 鑫辉科技 18KG 数字舵机 (连续旋转)
@@ -62,7 +63,7 @@
 #define MOTOR_PWM_FREQ            1000    // PWM 频率 (Hz)
 #define MOTOR_RES_BITS            10      // LEDC 分辨率位数 (0-1023)
 #define MOTOR_MIN_SPEED           20      // 最低稳定转速 (%)
-#define MOTOR_DEFAULT_SPEED       50      // 默认运行速度 (%)
+#define MOTOR_DEFAULT_SPEED       100     // 默认运行速度 (%)
 #define MOTOR_MAX_SPEED           100     // 最大转速 (%)
 #define MOTOR_SOFT_START_MS       1000    // 软启动时间 (ms)
 

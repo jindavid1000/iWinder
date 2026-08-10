@@ -12,10 +12,13 @@ public:
     void reattach(uint8_t pin);
 
     // 方向控制
-    void moveLeft();           // 向 Endstop 方向
-    void moveRight();          // 远离 Endstop 方向
-    void moveHome();           // 慢速左行（寻原点/校准）
+    void moveLeft();           // 向 Endstop 方向（物理左移）
+    void moveRight();          // 远离 Endstop 方向（物理右移）
+    void moveHome();           // 慢速左行（寻原点/校准，仅用于舵机标定）
     void stop();               // 停止
+
+    // 按比例调速（0.0~1.0，用于 RPM 同步绕线）
+    void setSpeedFraction(float frac);
 
     // 位置估算（在主循环中调用，dt 单位 ms）
     void updatePosition(uint32_t dtMs);
@@ -40,17 +43,21 @@ private:
     uint32_t   _maxDuty    = 65535;
 
     uint16_t   _pulseStop  = 1500;
-    uint16_t   _pulseLeft  = 1000;
-    uint16_t   _pulseRight = 2000;
-    uint16_t   _pulseHome  = 1300;
+    uint16_t   _pulseLeft  = 500;
+    uint16_t   _pulseRight = 2500;
+    uint16_t   _pulseHome  = 500;
+    uint16_t   _pulseMin   = 500;
+    uint16_t   _pulseMax   = 2500;
 
     float      _speedLeft  = 0;  // mm/s
     float      _speedRight = 0;  // mm/s
 
     TraverseDir _direction = DIR_NONE;
     float       _position  = 0;  // mm，相对于 Endstop 原点
+    float       _speedFraction = 1.0f;  // 满速比例（0.01~1.0）
 
     void writePulse(uint16_t pulseUs);
+    void writeCurrentDirection();  // 按当前方向+比例输出 PWM
 };
 
 extern ServoCtl g_servo;
