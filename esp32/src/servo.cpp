@@ -39,16 +39,38 @@ void ServoCtl::writePulse(uint16_t pulseUs) {
     ledcWrite(_channel, duty);
 }
 
-void ServoCtl::moveLeft()  { writePulse(_pulseLeft);  _direction = DIR_LEFT; }
-void ServoCtl::moveRight() { writePulse(_pulseRight); _direction = DIR_RIGHT; }
-void ServoCtl::moveHome()  { writePulse(_pulseHome);  _direction = DIR_LEFT; }
-void ServoCtl::stop()      { writePulse(_pulseStop);  _direction = DIR_NONE; }
+void ServoCtl::writeCurrentDirection() {
+    // 根据方向 + 速度比例计算实际 PWM 脉宽
+    uint16_t pulse;
+    if (_direction == DIR_LEFT) {
+        // 左行：从 stop(1500) 向 left(500) 偏移，按比例
+        pulse = _pulseStop - (_pulseStop - _pulseLeft) * _speedFraction;
+    } else if (_direction == DIR_RIGHT) {
+        // 右行：从 stop(1500) 向 right(2500) 偏移，按比例
+        pulse = _pulseStop + (_pulseRight - _pulseStop) * _speedFraction;
+    } else {
+        pulse = _pulseStop;
+    }
+    writePulse(pulse);
+}
+
+void ServoCtl::setSpeedFraction(float frac) {
+    if (frac < 0.01f) frac = 0.01f;
+    if (frac > 1.0f) frac = 1.0f;
+    _speedFraction = frac;
+    if (_direction != DIR_NONE) writeCurrentDirection();
+}
+
+void ServoCtl::moveLeft()  { _direction = DIR_LEFT;  writeCurrentDirection(); }
+void ServoCtl::moveRight() { _direction = DIR_RIGHT; writeCurrentDirection(); }
+void ServoCtl::moveHome()  { _speedFraction = 1.0f; _direction = DIR_LEFT;  writeCurrentDirection(); }
+void ServoCtl::stop()      { _direction = DIR_NONE; _speedFraction = 1.0f; writePulse(_pulseStop); }
 
 void ServoCtl::updatePosition(uint32_t dtMs) {
     if (_direction == DIR_NONE) return;
     float speed = (_direction == DIR_LEFT) ? _speedLeft : _speedRight;
     if (speed <= 0) return;
-    float delta = speed * (dtMs / 1000.0f);
+    float delta = speed * _speedFraction * (dtMs / 1000.0f);
     if (_direction == DIR_LEFT) {
         _position -= delta;
         if (_position < 0) _position = 0;

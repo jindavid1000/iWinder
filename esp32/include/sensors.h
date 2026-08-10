@@ -24,6 +24,10 @@ public:
 
     // Endstop — right=false 查左限位，right=true 查右限位
     bool     isEndstopTriggered(bool right = false);
+
+    // 直接读取引脚电平（不依赖中断，用于安全保护）
+    bool     isLeftEndstopPressed()  const { return digitalRead(_pinEndstop) == LOW; }
+    bool     isRightEndstopPressed() const { return digitalRead(_pinEndstopRight) == LOW; }
     void     onEndstop(EndstopCallback cb) { _endstopCb = cb; }
 
     // 累计脉冲（从启动开始）
