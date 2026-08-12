@@ -27,7 +27,10 @@ https://creativecommons.org/licenses/by-nc/4.0/
 
 ## 组装
 
-
+电机和主体的安装可前往原作者的视频查看
+https://www.bilibili.com/video/BV1EedYBeEyY/?spm_id_from=333.788.recommend_more_video.-1&trackid=web_related_0.router-related-2589621-4gb82.1786498199511.912&vd_source=ed1acd861692f1d7a0d3436715a9e9e4
+https://www.bilibili.com/video/BV1qpoMBfEwc/?spm_id_from=888.80997.embed_other.whitelist&t=635&bvid=BV1qpoMBfEwc
+，核心的往复机构稍微等一等，有时间的话应该会做一个视频（并不复杂，也没几个零件，自己稍微琢磨一下应该就行）
 
 ### 硬件清单
 
@@ -191,3 +194,6 @@ https://makerworld.com.cn/zh/models/1705115-hao-cai-xuan-zhuan-zhi-jia?from=sear
 CC BY-NC 4.0（署名-非商业性使用 4.0 国际）
 
 本项目硬件设计（3D 模型）和软件代码均可自由使用、修改和分享，但**不得用于商业目的**，使用时需注明出处。详见 [LICENSE](LICENSE)。
+
+制作不易，助力我买个 fusion 会员吧，🙏
+![图片描述](7f68057528a3c05cb0a61e4aa974e441.jpg)
