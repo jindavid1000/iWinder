@@ -67,7 +67,6 @@ bool setConfigValue(DeviceConfig &c, const String &key, float value) {
 
     // 通信
     if (key == "statusReportIntervalMs"){ c.statusReportIntervalMs = (uint16_t)value; return true; }
-    if (key == "bleDisconnectStop")   { c.bleDisconnectStop = (value != 0);       return true; }
     if (key == "wifiDisconnectStop")  { c.wifiDisconnectStop = (value != 0);      return true; }
 
     return false;
@@ -111,7 +110,6 @@ String getConfigJson(const DeviceConfig &c) {
     doc["targetTurns"]              = c.targetTurns;
     doc["fullLoadWarnPct"]          = c.fullLoadWarnPct;
     doc["statusReportIntervalMs"]   = c.statusReportIntervalMs;
-    doc["bleDisconnectStop"]        = (int)c.bleDisconnectStop;
     doc["wifiDisconnectStop"]       = (int)c.wifiDisconnectStop;
 
     String out;

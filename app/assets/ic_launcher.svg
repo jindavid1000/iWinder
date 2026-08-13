@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#006970"/>
+      <stop offset="100%" stop-color="#004858"/>
+    </linearGradient>
+    <linearGradient id="filament" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00e8b0"/>
+      <stop offset="100%" stop-color="#00c8d8"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- 圆角矩形背景 -->
+  <rect width="1024" height="1024" rx="225" ry="225" fill="url(#bg)"/>
+  
+  <!-- 料盘外圆 -->
+  <circle cx="512" cy="512" r="320" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="20"/>
+  
+  <!-- 料盘绕线 - 螺旋线效果 -->
+  <circle cx="512" cy="512" r="270" fill="none" stroke="url(#filament)" stroke-width="12"/>
+  <circle cx="512" cy="512" r="230" fill="none" stroke="url(#filament)" stroke-width="12" opacity="0.85"/>
+  <circle cx="512" cy="512" r="190" fill="none" stroke="url(#filament)" stroke-width="12" opacity="0.7"/>
+  <circle cx="512" cy="512" r="150" fill="none" stroke="url(#filament)" stroke-width="12" opacity="0.55"/>
+  <circle cx="512" cy="512" r="110" fill="none" stroke="url(#filament)" stroke-width="12" opacity="0.4"/>
+  
+  <!-- 中心孔 -->
+  <circle cx="512" cy="512" r="50" fill="rgba(255,255,255,0.15)"/>
+  <circle cx="512" cy="512" r="30" fill="#004858"/>
+  
+  <!-- 排线指示线（从中心向右下延伸，代表排线方向）-->
+  <line x1="512" y1="512" x2="780" y2="380" stroke="url(#filament)" stroke-width="8" opacity="0.6" stroke-linecap="round"/>
+  <circle cx="780" cy="380" r="14" fill="#00e8b0"/>
+</svg>

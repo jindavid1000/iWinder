@@ -1,51 +1,131 @@
-# 耗材绕线器v0.1(本项目目前还无法正常使用，但模型部分基本完成，后面主要是更新固件和 app)
+<div align="center">
 
-3D 打印耗材自动绕线器 —— 把散装耗材整齐地绕到料盘上。
+# iWinder
 
-ESP32 主控 + 连续旋转舵机排线 + 直流电机收线，手机 APP 无线控制，支持蓝牙和 WiFi 双模连接、实时监控、参数预设。
+### 3D 打印智能绕线器 · 手机 APP 无线控制 · 开源
 
-根据废改实验室的散料绕线器+手摇+电动进行改造，此绕线器几乎可以绕全部尺寸的料盘，且大部分参数支持自定义
+ESP32 + 舵机丝杆排线 + 直流电机收线，把散装线材整齐绕到任何料盘上。
 
-https://makerworld.com.cn/zh/models/2379707-san-liao-rao-xian-qi-shou-yao-dian-dong?from=search#profileId-2700945
+**不只绕耗材——电线、绳线、织带，通通能绕。**
 
-https://creativecommons.org/licenses/by-nc/4.0/
+![License](https://img.shields.io/badge/license-CC%20BY--NC%204.0-blue)
+![Platform](https://img.shields.io/badge/platform-ESP32-orange)
+![Status](https://img.shields.io/badge/status-v0.1%20beta-yellow)
+
+</div>
+
+---
+QQ 交流群：1103884695
+
+## ✨ 项目亮点
+
+- 📱 **手机 APP 无线控制** — WiFi 连接，实时监控转速/长度/排线位置，不用守在机器旁边
+- 🧵 **自适应排线** — 排线速度根据料盘实际转速自动同步，每圈移动一个线径，紧密排列无间隙
+- 🎛️ **全程可调** — 线径、料盘尺寸、速度、排线范围全部 APP 里改，支持保存 10 组预设方案
+- 🔧 **几乎兼容所有料盘** — 拓竹、eSUN、随便什么牌子，尺寸不合适随时调参数
+- 💰 **成本低** — 全套约 ¥60+，手摇版最省
+- 🔓 **完全开源** — 硬件 + 固件 + APP + 3D 模型，CC BY-NC 4.0
+
+## 🎯 能绕什么？
+
+| 线材类型 | 说明 |
+|---------|------|
+| 3D 打印耗材（PLA/PETG/TPU...） | 1.75mm / 2.85mm / 3mm，默认优化拓竹 1kg 料盘 |
+| 电线 / 线束 | 绕到线盘上，排线整齐不乱 |
+| 钓鱼线 / 细绳 | 换个料盘就能绕 |
+| 织带 / 扁平带材 | 调整排线间距即可 |
+
+> 只要料盘装得上去、参数调得好，什么都能绕。
 
 ---
 
-## 项目结构
+## 📸 效果展示
 
-```
-├── app/            # Flutter 手机 APP（Android）
-├── esp32/          # ESP32 固件（PlatformIO + Arduino）
-├── 模型/           # 3D 打印模型文件（.3mf）
-└── 设定/           # 开发文档
-    ├── 描述.md     # 完整开发规范（硬件/协议/APP/配置）
-    └── 重构方案.md # WiFi/LEDC 问题修复记录
-```
+### 整机外观
+
+<div align="center">
+
+<img src="效果图.jpg" width="600">
+
+</div>
+
+### APP 界面
+
+<div align="center">
+<table>
+<tr>
+<td align="center"><b>设备连接</b></td>
+<td align="center"><b>控制面板</b></td>
+</tr>
+<tr>
+<td align="center"><img src="docs/app_connect.png" width="350"><br><sub>WiFi 配网 / 局域网搜索 / 直连 IP</sub></td>
+<td align="center"><img src="docs/app_control.png" width="350"><br><sub>启停控制 / 实时调速 / 运行监控</sub></td>
+</tr>
+</table>
+</div>
+
+<div align="center">
+<table>
+<tr>
+<td align="center"><b>参数预设</b></td>
+<td align="center"><b>设置页面</b></td>
+</tr>
+<tr>
+<td align="center"><img src="docs/app_preset.png" width="350"><br><sub>料盘参数管理 / 一键切换方案</sub></td>
+<td align="center"><img src="docs/app_settings.png" width="350"><br><sub>引脚/传感器/舵机/电机全部可调</sub></td>
+</tr>
+</table>
+</div>
+
+### 运行演示
+
+> 🎬 运行 GIF 待补充（绕线过程 + APP 实时数据）
 
 ---
 
-## 组装
+## 🏗️ 组装
 
-电机和主体的安装可前往原作者的视频查看
-https://www.bilibili.com/video/BV1EedYBeEyY/?spm_id_from=333.788.recommend_more_video.-1&trackid=web_related_0.router-related-2589621-4gb82.1786498199511.912&vd_source=ed1acd861692f1d7a0d3436715a9e9e4
-https://www.bilibili.com/video/BV1qpoMBfEwc/?spm_id_from=888.80997.embed_other.whitelist&t=635&bvid=BV1qpoMBfEwc
-，核心的往复机构稍微等一等，有时间的话应该会做一个视频（并不复杂，也没几个零件，自己稍微琢磨一下应该就行）
+> 详细组装视频可参考原作者 [废改实验室](https://makerworld.com.cn/zh/models/2379707-san-liao-rao-xian-qi-shou-yao-dian-dong) 的教程（电机部分）。
+
+### 版本选择
+
+本项目提供三个版本，核心排线机构相同，区别在收线驱动方式：
+
+| 版本 | 成本 | 适合人群 | 特点 |
+|------|------|---------|------|
+| **手摇/电钻** | ~¥60 | 预算有限 | 手摇或电钻驱动，最经济 |
+| **单电机** | ~¥85 | 推荐首选 | 电机自动收线，解放双手 |
+| **双电机** | ~¥100 | 追求扭矩 | 双电机驱动，更强力 |
+
+> 详细 BOM 见 [`BOM/`](BOM/) 目录（含拼多多链接和价格）。
 
 ### 硬件清单
 
 | 部件 | 规格 | 说明 |
 |------|------|------|
 | 主控板 | ESP32-DevKitC（普通版） | |
-| 收线盘电机 | 直流减速电机 6V 40RPM | 单向收线 |
+| 收线盘电机 | 直流减速电机 6V 40RPM | 单向收线（单/双电机版） |
 | 电机驱动 | IRF520 MOS 模块 | PWM 调速 |
-| 排线舵机 | 鑫辉 18KG 连续旋转舵机 | 驱动丝杆排线 |
-| 丝杆 | T8 四头丝杆 + 螺母（导程 22mm，螺距 5.5mm） | |
-| 霍尔传感器 | KY-003（A3144）× 1 | 料盘计圈（小心别买到没有 led 和电阻的，不知道是不是我个人问题，我在测试的时候没有的无法正常使用） |
+| 排线舵机 | MG946R 360° 连续旋转（首选）/ 鑫辉 18KG（备选） | 驱动丝杆排线 |
+| 丝杆 | T8 四头丝杆 + 螺母（导程 22mm） | |
+| 霍尔传感器 | KY-003（A3144）× 1 | 料盘计圈 |
 | 磁铁 | N35 Φ6×2mm × 8 | 贴在料盘上配合霍尔 |
-| 限位开关 | 摆杆式 Endstop（无滚轮）× 2 | |
-| 轴承 | 608ZZ | |
-| 电源 | 鹿小班 DCP3512 LM2596 可调降压模块 | 四路输出（3.3V / 5V / 12V / 可调），每路最大 3.5A |
+| 限位开关 | 摆杆式 Endstop × 2 | 左原点 + 右限位 |
+| 轴承 | 608ZZ × 8 | |
+| 电源 | 多路降压模块（3.3V/5V/12V） | 鹿小班 DCP3512 或等效 |
+
+<details>
+<summary>📌 舵机说明（点击展开）</summary>
+
+- **首选：MG946R 360° 连续旋转舵机**（泰尔科技，约 ¥12.2）
+  - 需额外打印「模型/配置/mg946 改双轴.3mf」改装件
+  - 参考项目：[MG996R 双轴舵机适配器](https://makerworld.com.cn/zh/models/538013) by LaphaeL
+- **备选：鑫辉 18KG 360° 连续旋转舵机**（约 ¥31）
+  - 自带金属舵盘，无需改装件
+  - 支持 7.4V，扭矩更大
+- ⚠️ 两个都是 **360° 连续旋转舵机**，不是普通 180° 位置舵机
+
+</details>
 
 ### 接线
 
@@ -65,58 +145,53 @@ https://www.bilibili.com/video/BV1qpoMBfEwc/?spm_id_from=888.80997.embed_other.w
 | 电源模块输出 | 连接 |
 |-------------|------|
 | 3.3V | ESP32 3V3 脚、霍尔传感器 VCC、Endstop 信号公共端 |
-| 5V | 舵机 VCC（如舵机额定 5V） |
+| 5V | 舵机 VCC |
 | 12V | IRF520 驱动板电机供电端、电机正极 |
 | GND | 所有模块共地 |
 
-> ⚠️ ESP32 的 GND 必须与电机/舵机电源的 GND 共地，否则 PWM 信号不稳定。
+> ⚠️ ESP32 的 GND 必须与电机/舵机电源的 GND **共地**，否则 PWM 信号不稳定。
 > 引脚全部可在 `esp32/include/config.h` 中修改，也可通过 APP 运行时调整。
 
 ### 3D 打印
 
-`模型/` 目录下提供所有打印件。推荐使用 Bambu Studio 切片，PLA 或 PETG 均可（推荐使用 petg，因为我所有模型都在 petg 下测试）。
+`模型/` 目录下提供所有打印件。推荐使用 Bambu Studio 切片，**PETG**（所有模型均在 PETG 下测试通过），PLA 也可以。
 
 ---
 
-## 使用指南
+## 🚀 使用指南
 
 ### 第一步：烧录固件
 
 **安装 PlatformIO**（VS Code 插件或命令行均可）
 
 ```bash
-# 命令行安装
 pip install platformio
 ```
 
 **烧录**
 
 1. USB 连接 ESP32 到电脑
-2. 确认串口设备（`pio device list` 查看）
-3. 编译并烧录：
+2. 编译并烧录：
 
 ```bash
 cd esp32
 pio run -e esp32 -t upload
 ```
 
-4. 烧录完成后打开串口监视器确认启动成功：
+3. 烧录完成后打开串口确认启动成功：
 
 ```bash
 pio device monitor
 ```
 
-> 如果只需验证单个硬件模块，可用测试环境：`pio run -e test_motor -t upload`（可选：`test_led`、`test_servo`、`test_hall`、`test_endstop`、`test_wifi`）
-
----
+> 💡 可单独测试硬件模块：`pio run -e test_motor -t upload`（可选：`test_led`、`test_servo`、`test_hall`、`test_endstop`、`test_wifi`）
 
 ### 第二步：安装 APP
 
-**方式一：直接安装 APK（推荐）**
+从 [Releases](../../releases) 下载 `app-release.apk`，传到手机安装。
 
-从 [Releases](../../releases) 下载最新的 `app-release.apk`，传到手机安装。
-
-**方式二：自行编译**
+<details>
+<summary>或自行编译（需要 Flutter 环境）</summary>
 
 ```bash
 cd app
@@ -125,82 +200,66 @@ flutter build apk --release
 # 产物：build/app/outputs/flutter-apk/app-release.apk
 ```
 
----
+</details>
 
 ### 第三步：连接设备
 
-ESP32 上电后会同时启动 **WiFi 热点（ESP-Winder）** 和尝试连接上次配过的 WiFi。
-
-#### 首次配网（两种方式）
-
-**方式 A — WiFi 热点配网**
+ESP32 上电后会启动 **WiFi 热点（ESP-Winder）**。
 
 1. 手机 WiFi 设置里连接热点 **ESP-Winder**
-2. 打开 APP，进入「设备连接」页面
-3. IP 填 `192.168.4.1`，端口 `8080`，点「连接」
-4. 在「WiFi 配网」区域输入家庭 WiFi 名称和密码，点「发送配网」
-5. ESP32 连上家庭 WiFi 后会回报局域网 IP
-6. 手机切回家庭 WiFi，以后就能用局域网 IP 连接了
-
-**方式 B — 局域网自动发现**
-
-> 前提：ESP32 已经配过网，且和手机在同一 WiFi 下
-
-1. 打开 APP，进入「设备连接」页面
-2. 点「搜索设备」
-3. APP 会自动搜索局域网内的绕线器，找到后一键连接
-
----
+2. 打开 APP → IP 填 `192.168.4.1`，端口 `8080` → 连接
+3. 在「WiFi 配网」输入家庭 WiFi 密码 → 发送配网
+4. 手机切回家庭 WiFi，以后用「搜索设备」自动发现连接
 
 ### 第四步：开始绕线
 
-1. **设置参数**：在「预设」页面选择或编辑料盘参数（默认拓竹 1kg，可改线径、料盘尺寸等）
-2. **调速**：在主控制页面拖动速度滑块设定速度
-3. **启动**：点「启动」，收线盘软启动旋转，排线机构自动左右移动
-4. **运行中**：APP 实时显示转速、圈数、绕线长度、排线位置等
+1. **选预设**：默认拓竹 1kg，可自定义线径/料盘尺寸
+2. **标定舵机**：设置页面点「标定」，自动测量排线速度
+3. **调速启动**：拖速度滑块 → 点「启动」
+4. **运行监控**：APP 实时显示转速、圈数、长度、排线位置
 5. **停止**：点「停止」，排线自动回原点归位
-
-排线机构会每绕几个来回自动回限位校准一次，保证排线精度。
 
 ---
 
-## 参数调校
+## ⚙️ 参数调校
 
-首次使用需要在 APP 设置页面标定以下参数：
+首次使用在 APP 设置页面标定：
 
 | 参数 | 说明 |
 |------|------|
-| 排线左/右行速度 | 实测排线移动速度（mm/s），点「标定」自动测量 |
-| 电机最低转速 | 电机不堵转的最低稳定速度百分比 |
+| 排线速度 | 点「标定」自动测量左右行线速度 |
 | 料盘参数 | 外径、宽度、芯轴直径（有/无纸筒可切换） |
-| 排线范围 | 左起始位置、右终止位置（默认 = 料盘宽度） |
-| 校准间隔 | 每几个来回回 Endstop 校准一次（默认 3） |
+| 排线范围 | 左起始位置、右终止位置 |
+| 校准间隔 | 每几个来回回限位校准一次（默认 3） |
 
-所有参数都支持保存为预设方案（最多 10 组），一键切换。ESP32 断电后参数保存在 NVS 中不会丢失。
+所有参数支持保存为预设方案（最多 10 组），一键切换。ESP32 断电后参数保存在 NVS 中不会丢失。
 
 ---
+
+## 📁 项目结构
+
+```
+├── app/            # Flutter 手机 APP（Android）
+├── esp32/          # ESP32 固件（PlatformIO + Arduino）
+├── 模型/           # 3D 打印模型文件（.3mf / .step）
+├── BOM/            # 硬件采购清单（三个版本）
+└── 设定/           # 开发文档
+    ├── 描述.md     # 完整开发规范（硬件/协议/APP/配置）
+    └── 重构方案.md # WiFi/LEDC 问题修复记录
+```
+
+---
+
+## 🙏 鸣谢
+
+- [废改实验室](https://makerworld.com.cn/zh/models/2379707-san-liao-rao-xian-qi-shou-yao-dian-dong) — 原始散料绕线器设计
+- [LaphaeL](https://makerworld.com.cn/zh/models/538013) — MG996R 双轴舵机适配器
+
 ## 可选配件
 
-靴不会
+- [耗材旋转支架](https://makerworld.com.cn/zh/models/1705115-hao-cai-xuan-zhuan-zhi-jia) — 放散料用，省料
 
-耗材旋转支架
-
-https://makerworld.com.cn/zh/models/1705115-hao-cai-xuan-zhuan-zhi-jia?from=search#profileId-1876547
-
-（我在站内找到的最省料的耗材转盘，可以用来当散料从转盘，上面放散料）
-
-
-
-
-LaphaeL
-
-MG996R双轴舵机适配器
-
-https://makerworld.com.cn/zh/models/538013-mg996rshuang-zhou-duo-ji-gua-pei-qi?from=search#profileId-466131
-
-（可以把 mg946、mg995、mg996 改成标准的双轴舵机，本项目中我最开始使用的是鑫辉的 18kg 舵机，因为我本来就有，后来整理 BOM 的时候发现好贵，就觉得可以换成便宜的舵机，然后就看到了这个已有的项目，用这个就可以直接把舵机改成适配的双轴舵机，如果你买的是 mg946，那么就需要打印一份这个，文件在 模型/配置/mg946 改双轴.3mf 也有）
-
-鑫辉最高 7.4v，mg946 6v，不要更高
+---
 
 ## License
 
@@ -208,5 +267,11 @@ CC BY-NC 4.0（署名-非商业性使用 4.0 国际）
 
 本项目硬件设计（3D 模型）和软件代码均可自由使用、修改和分享，但**不得用于商业目的**，使用时需注明出处。详见 [LICENSE](LICENSE)。
 
-制作不易，助力我买个 fusion 会员吧，🙏
-![图片描述](7f68057528a3c05cb0a61e4aa974e441.jpg)
+---
+
+<div align="center">
+
+制作不易，如果这个项目对你有帮助，欢迎 ⭐ Star 支持一下（当然如果愿意助力我买个 fusion 的话我也是不介意的😄）！
+![截图](乞讨.jpg)
+
+</div>

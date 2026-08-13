@@ -2,20 +2,16 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
-import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 import '../models/device_config.dart';
 import 'comm_manager.dart';
-
-enum ConnectMode { ble, wifi }
 
 class AppModel extends ChangeNotifier {
   final CommManager _comm = CommManager();
 
   // 连接状态
-  bool bleConnected = false;
   bool wifiConnected = false;
-  bool get isConnected => bleConnected || wifiConnected;
+  bool get isConnected => wifiConnected;
 
   // 设备状态
   DeviceStatus status = DeviceStatus();
@@ -28,10 +24,6 @@ class AppModel extends ChangeNotifier {
   }
   List<String> presets = [];
   String? lastError;
-
-  // 扫描
-  bool scanning = false;
-  List<BluetoothDevice> scanResults = [];
 
   // WiFi 信息
   String? deviceIP;
@@ -52,7 +44,7 @@ class AppModel extends ChangeNotifier {
   void togglePreviewMode() {
     previewMode = !previewMode;
     if (previewMode) {
-      bleConnected = true;
+      wifiConnected = true;
       // 填入模拟状态数据
       status.state = 'idle';
       status.speed = config.motorDefaultSpeed;
@@ -63,9 +55,9 @@ class AppModel extends ChangeNotifier {
           ? config.spoolCoreDiaWithCard
           : config.spoolCoreDiaNoCard;
       status.traversePos = config.traverseLeftStart;
-      status.link = 'ble';
+      status.link = 'wifi';
     } else {
-      bleConnected = false;
+      wifiConnected = false;
     }
     notifyListeners();
   }
@@ -97,19 +89,11 @@ class AppModel extends ChangeNotifier {
 
   AppModel() {
     _comm.onMessage = _handleMessage;
-    _comm.onBleConnectionChanged = (c) {
-      bleConnected = c;
-      notifyListeners();
-    };
     _comm.onWifiConnectionChanged = (c) {
       wifiConnected = c;
       notifyListeners();
     };
     _loadSavedDeviceIP();
-    _comm.onScanResult = (devices) {
-      scanResults = devices;
-      notifyListeners();
-    };
   }
 
   String get activeLink => _comm.activeLink;
@@ -196,36 +180,6 @@ class AppModel extends ChangeNotifier {
     savedDeviceIP = null;
     savedDeviceSSID = null;
     notifyListeners();
-  }
-
-  // ===========================================================================
-  //  BLE 扫描/连接
-  // ===========================================================================
-
-  Future<void> startScan() async {
-    scanning = true;
-    notifyListeners();
-    await _comm.startScan();
-    scanning = false;
-    notifyListeners();
-  }
-
-  Future<void> stopScan() async {
-    await _comm.stopScan();
-  }
-
-  Future<bool> connectBle(BluetoothDevice device) async {
-    final ok = await _comm.connect(device);
-    if (ok) {
-      // 连接后请求参数和预设列表
-      sendGetParams();
-      sendListPresets();
-    }
-    return ok;
-  }
-
-  Future<void> disconnect() async {
-    await _comm.disconnect();
   }
 
   // ===========================================================================

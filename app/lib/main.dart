@@ -64,8 +64,8 @@ class _HomePageState extends State<HomePage> {
         onDestinationSelected: (i) => setState(() => _index = i),
         destinations: [
           const NavigationDestination(
-            icon: Icon(Icons.bluetooth),
-            selectedIcon: Icon(Icons.bluetooth_connected),
+            icon: Icon(Icons.wifi),
+            selectedIcon: Icon(Icons.wifi),
             label: '连接',
           ),
           NavigationDestination(
@@ -101,7 +101,7 @@ class _NotConnected extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.bluetooth_disabled, size: 64, color: Colors.grey),
+          Icon(Icons.wifi_off, size: 64, color: Colors.grey),
           SizedBox(height: 16),
           Text('请先连接设备', style: TextStyle(fontSize: 16, color: Colors.grey)),
         ],

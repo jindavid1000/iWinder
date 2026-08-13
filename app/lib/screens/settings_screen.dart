@@ -166,11 +166,6 @@ class SettingsScreen extends StatelessWidget {
             _NumField(label: '状态上报间隔 (ms)', value: model.config.statusReportIntervalMs.toDouble(),
                 onChanged: (v) => model.config.statusReportIntervalMs = v.round()),
             SwitchListTile(
-              title: const Text('蓝牙断开停机'),
-              value: model.config.bleDisconnectStop,
-              onChanged: (v) { model.config.bleDisconnectStop = v; model.notifyListeners(); },
-            ),
-            SwitchListTile(
               title: const Text('WiFi 断开停机'),
               value: model.config.wifiDisconnectStop,
               onChanged: (v) { model.config.wifiDisconnectStop = v; model.notifyListeners(); },

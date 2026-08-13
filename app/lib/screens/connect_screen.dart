@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 import '../services/app_model.dart';
 
@@ -16,7 +15,7 @@ class ConnectScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          if (!model.bleConnected && !model.wifiConnected)
+          if (!model.wifiConnected)
             Card(
               color: Theme.of(context).colorScheme.primaryContainer,
               child: ListTile(
@@ -56,7 +55,7 @@ class ConnectScreen extends StatelessWidget {
             _MdnsDiscoverCard(model: model),
           if (!model.wifiConnected)
             const SizedBox(height: 16),
-          _BleSection(model: model),
+          _TcpConnectSection(model: model),
           const SizedBox(height: 16),
           if (model.isConnected) _WifiSection(model: model),
         ],
@@ -83,8 +82,6 @@ class _ConnectionStatus extends StatelessWidget {
               Text('通信链路: ${model.activeLink}'),
             ]),
             const SizedBox(height: 8),
-            _StatusChip(label: '蓝牙', active: model.bleConnected, icon: Icons.bluetooth),
-            const SizedBox(height: 4),
             _StatusChip(label: 'WiFi', active: model.wifiConnected, icon: Icons.wifi),
             if (model.deviceWifiConnected && model.deviceIP != null) ...[
               const SizedBox(height: 8),
@@ -121,29 +118,6 @@ class _StatusChip extends StatelessWidget {
             style: TextStyle(fontSize: 12, color: active ? Colors.green : Colors.grey)),
       ),
     ]);
-  }
-}
-
-class _BleSection extends StatelessWidget {
-  final AppModel model;
-  const _BleSection({required this.model});
-
-  @override
-  Widget build(BuildContext context) {
-    if (model.bleConnected) {
-      return Card(
-        child: ListTile(
-          leading: const Icon(Icons.bluetooth_connected, color: Colors.green),
-          title: const Text('ESP-Winder'),
-          subtitle: const Text('已连接，点击断开'),
-          trailing: TextButton(
-            onPressed: () => model.disconnect(),
-            child: const Text('断开'),
-          ),
-        ),
-      );
-    }
-    return _TcpConnectSection(model: model);
   }
 }
 
