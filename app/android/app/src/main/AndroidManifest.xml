@@ -1,19 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- BLE 权限 (Android 12+) -->
-    <uses-permission android:name="android.permission.BLUETOOTH_SCAN"
-        android:usesPermissionFlags="neverForLocation" />
-    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
-    <!-- BLE 权限 (Android 11 及以下) -->
-    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
-    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
-    <!-- 位置权限 (BLE 扫描需要) -->
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <!-- 网络权限 (WiFi TCP) -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
-    <!-- BLE 硬件特性声明 -->
-    <uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />
 
     <application
         android:label="绕线器"

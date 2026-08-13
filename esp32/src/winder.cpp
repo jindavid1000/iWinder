@@ -73,6 +73,7 @@ void Winder::startTask(int speedPct) {
         g_state.spoolTurns = 0;
         g_state.lengthTheoretical = 0;
         g_state.roundTrips = 0;
+        _smoothRpm = 0;
         g_servo.moveRight();  // 回右原点（原点 = 右限位）
         _homeGoRight = true;
         setState(STATE_HOMING);
@@ -394,18 +395,27 @@ void Winder::doRunning(uint32_t dtMs) {
     g_state.currentLayer      = g_slip.getCurrentLayer();
     g_state.currentSpeedPct   = g_motor.getCurrentSpeedPct();
 
+    // RPM 平滑：用更长的窗口算瞬时 RPM，再 EMA 滤波
+    // 每次脉冲到来时刷新估算，无脉冲时用衰减估算
     if (newSpool > 0 && dtSec > 0) {
-        g_state.spoolRpm = (newSpool / (float)g_config.hallSpoolMagnets) / dtSec * 60.0f;
+        float instantRpm = (newSpool / (float)g_config.hallSpoolMagnets) / dtSec * 60.0f;
+        // EMA: 新值占 15%，旧值占 85%，平滑过渡
+        _smoothRpm = _smoothRpm * 0.85f + instantRpm * 0.15f;
+    } else {
+        // 没有新脉冲：缓慢衰减（电机不可能瞬间停）
+        _smoothRpm *= 0.95f;
+        if (_smoothRpm < 1.0f) _smoothRpm = 0;
     }
+    g_state.spoolRpm = _smoothRpm;
 
-    // 调试：每 2 秒打印一次脉冲/计数/配置状态
+    // 调试：每 2 秒打印一次
     static uint32_t lastDbgMs = 0;
     if (millis() - lastDbgMs > 2000) {
         lastDbgMs = millis();
-        Serial.printf("[DBG] pulses=%u new=%u totalSpool=%u hallMagnets=%u pinHall=%u\n",
+        Serial.printf("[DBG] pulses=%u new=%u totalSpool=%u hallMagnets=%u pinHall=%u rpm=%.1f\n",
                       g_state.spoolPulses, newSpool,
                       g_sensors.getTotalSpoolPulses(),
-                      g_config.hallSpoolMagnets, g_config.pinHallSpool);
+                      g_config.hallSpoolMagnets, g_config.pinHallSpool, _smoothRpm);
     }
 
     processTraverse(dtMs);

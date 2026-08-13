@@ -53,7 +53,6 @@ class DeviceConfig {
 
   // 通信
   int statusReportIntervalMs;
-  bool bleDisconnectStop;
   bool wifiDisconnectStop;
 
   DeviceConfig({
@@ -93,7 +92,6 @@ class DeviceConfig {
     this.targetTurns = 0,
     this.fullLoadWarnPct = 95,
     this.statusReportIntervalMs = 500,
-    this.bleDisconnectStop = true,
     this.wifiDisconnectStop = false,
   });
 
@@ -136,7 +134,6 @@ class DeviceConfig {
     c.targetTurns = _i(m, 'targetTurns', 0);
     c.fullLoadWarnPct = _i(m, 'fullLoadWarnPct', 95);
     c.statusReportIntervalMs = _i(m, 'statusReportIntervalMs', 500);
-    c.bleDisconnectStop = _i(m, 'bleDisconnectStop', 1) != 0;
     c.wifiDisconnectStop = _i(m, 'wifiDisconnectStop', 0) != 0;
     return c;
   }
@@ -179,7 +176,6 @@ class DeviceConfig {
     'targetTurns': targetTurns,
     'fullLoadWarnPct': fullLoadWarnPct,
     'statusReportIntervalMs': statusReportIntervalMs,
-    'bleDisconnectStop': bleDisconnectStop ? 1 : 0,
     'wifiDisconnectStop': wifiDisconnectStop ? 1 : 0,
   };
 

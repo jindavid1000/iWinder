@@ -71,11 +71,6 @@
 //============================================================================
 //  4.9  通信参数
 //============================================================================
-#define BLE_DEVICE_NAME           "ESP-Winder"
-#define BLE_DEVICE_NAME_CN        "esp 绕线器"
-#define BLE_SERVICE_UUID          "6e400001-b5a3-f393-e0a9-e50e24dcca9e"
-#define BLE_RX_CHAR_UUID          "6e400002-b5a3-f393-e0a9-e50e24dcca9e"
-#define BLE_TX_CHAR_UUID          "6e400003-b5a3-f393-e0a9-e50e24dcca9e"
 #define WIFI_TCP_PORT             8080
 #define STATUS_REPORT_INTERVAL_MS 500
 
@@ -176,7 +171,6 @@ struct DeviceConfig {
 
     // --- 通信 ---
     uint16_t statusReportIntervalMs;
-    bool     bleDisconnectStop;  // true = BLE 断开停机
     bool     wifiDisconnectStop; // true = WiFi 断开停机
 
     // 返回此配置的编译时默认值
@@ -225,7 +219,6 @@ struct DeviceConfig {
         c.fullLoadWarnPct       = FULL_LOAD_WARN_PCT;
 
         c.statusReportIntervalMs = STATUS_REPORT_INTERVAL_MS;
-        c.bleDisconnectStop     = true;   // BLE 断开默认停机
         c.wifiDisconnectStop    = false;   // WiFi 断开默认继续
         return c;
     }

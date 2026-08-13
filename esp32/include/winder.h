@@ -60,6 +60,7 @@ private:
 
     // 速度
     int      _targetSpeed  = 0;
+    float    _smoothRpm    = 0;  // RPM EMA 平滑值
 
     void setState(DeviceState s);
     void setError(ErrorCode code, const String &msg);

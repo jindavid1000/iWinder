@@ -128,11 +128,6 @@ class _PresetEditorScreenState extends State<PresetEditorScreen> {
             _Num(label: '状态上报间隔 (ms)', val: _cfg.statusReportIntervalMs.toDouble(),
               on: (v) => _cfg.statusReportIntervalMs = v.round()),
             SwitchListTile(
-              title: const Text('蓝牙断开停机'),
-              value: _cfg.bleDisconnectStop,
-              onChanged: (v) => setState(() => _cfg.bleDisconnectStop = v),
-            ),
-            SwitchListTile(
               title: const Text('WiFi 断开停机'),
               value: _cfg.wifiDisconnectStop,
               onChanged: (v) => setState(() => _cfg.wifiDisconnectStop = v),
