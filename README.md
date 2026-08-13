@@ -189,6 +189,17 @@ https://makerworld.com.cn/zh/models/1705115-hao-cai-xuan-zhuan-zhi-jia?from=sear
 
 （我在站内找到的最省料的耗材转盘，可以用来当散料从转盘，上面放散料）
 
+
+
+
+LaphaeL
+
+MG996R双轴舵机适配器
+
+https://makerworld.com.cn/zh/models/538013-mg996rshuang-zhou-duo-ji-gua-pei-qi?from=search#profileId-466131
+
+（可以把 mg946、mg995、mg996 改成标准的双轴舵机，本项目中我最开始使用的是鑫辉的 18kg 舵机，因为我本来就有，后来整理 BOM 的时候发现好贵，就觉得可以换成便宜的舵机，然后就看到了这个已有的项目，用这个就可以直接把舵机改成适配的双轴舵机，如果你买的是 mg946，那么就需要打印一份这个，文件在 模型/配置/mg946 改双轴.3mf 也有）
+
 ## License
 
 CC BY-NC 4.0（署名-非商业性使用 4.0 国际）
