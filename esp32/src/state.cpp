@@ -28,6 +28,7 @@ const char* errorName(ErrorCode e) {
         case ERR_BREAK:         return "break";
         case ERR_HOMING_FAILED: return "homing_failed";
         case ERR_SENSOR:        return "sensor_error";
+        case ERR_JAM:           return "jam";
         default:                return "unknown";
     }
 }

@@ -5,8 +5,8 @@
 #define PIN_LED          2
 #define PIN_MOTOR_PWM    4
 #define PIN_SERVO_PWM    5
-#define PIN_ENDSTOP      14
-#define PIN_ENDSTOP_RIGHT 32
+#define PIN_ENDSTOP      32
+#define PIN_ENDSTOP_RIGHT 14
 #define PIN_HALL_SPOOL   27
 
 inline void ledOn()  { pinMode(PIN_LED, OUTPUT); digitalWrite(PIN_LED, HIGH); }
@@ -27,6 +27,14 @@ inline void waitEnter(const char* msg) {
 inline void setupLEDC(uint8_t pin, uint8_t ch, uint32_t freq, uint8_t res) {
     ledcSetup(ch, freq, res);
     ledcAttachPin(pin, ch);
+}
+
+// 把本测试不用的输出引脚钉死电平，防止悬空：
+//  - 电机 SIG 悬空 → MOS 栅极漂移，电机微动
+//  - 舵机 SIG 悬空 → 360°舵机被噪声触发随机转动
+inline void parkUnusedOutputs(uint8_t usedPin) {
+    if (usedPin != PIN_MOTOR_PWM) { pinMode(PIN_MOTOR_PWM, OUTPUT); digitalWrite(PIN_MOTOR_PWM, LOW); }
+    if (usedPin != PIN_SERVO_PWM) { pinMode(PIN_SERVO_PWM, OUTPUT); digitalWrite(PIN_SERVO_PWM, LOW); }
 }
 
 // 霍尔 ISR 计数

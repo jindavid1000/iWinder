@@ -40,6 +40,7 @@ class DeviceConfig {
   double servoTraverseSpeedLeft;
 
   // 电机
+  int driveMode; // 0=电动 1=手动(手摇)
   int motorMinSpeed;
   int motorDefaultSpeed;
   int motorMaxSpeed;
@@ -58,9 +59,9 @@ class DeviceConfig {
   DeviceConfig({
     this.pinMotorPwm = 4,
     this.pinServoPwm = 5,
-    this.pinEndstop = 6,
-    this.pinEndstopRight = 32,
-    this.pinHallSpool = 8,
+    this.pinEndstop = 32,
+    this.pinEndstopRight = 14,
+    this.pinHallSpool = 27,
     this.hallSpoolMagnets = 4,
     this.hallDebounceUs = 5000,
     this.endstopDebounceUs = 20000,
@@ -83,6 +84,7 @@ class DeviceConfig {
     this.servoPulseMax = 2500,
     this.servoTraverseSpeedRight = 0.0,
     this.servoTraverseSpeedLeft = 0.0,
+    this.driveMode = 0,
     this.motorMinSpeed = 20,
     this.motorDefaultSpeed = 50,
     this.motorMaxSpeed = 100,
@@ -100,9 +102,9 @@ class DeviceConfig {
     final c = DeviceConfig();
     c.pinMotorPwm = _i(m, 'pinMotorPwm', 4);
     c.pinServoPwm = _i(m, 'pinServoPwm', 5);
-    c.pinEndstop = _i(m, 'pinEndstop', 6);
-    c.pinEndstopRight = _i(m, 'pinEndstopRight', 32);
-    c.pinHallSpool = _i(m, 'pinHallSpool', 8);
+    c.pinEndstop = _i(m, 'pinEndstop', 32);
+    c.pinEndstopRight = _i(m, 'pinEndstopRight', 14);
+    c.pinHallSpool = _i(m, 'pinHallSpool', 27);
     c.hallSpoolMagnets = _i(m, 'hallSpoolMagnets', 4);
     c.hallDebounceUs = _i(m, 'hallDebounceUs', 5000);
     c.endstopDebounceUs = _i(m, 'endstopDebounceUs', 20000);
@@ -125,6 +127,7 @@ class DeviceConfig {
     c.servoPulseMax = _i(m, 'servoPulseMax', 2500);
     c.servoTraverseSpeedRight = _d(m, 'servoTraverseSpeedRight', 0.0);
     c.servoTraverseSpeedLeft = _d(m, 'servoTraverseSpeedLeft', 0.0);
+    c.driveMode = _i(m, 'driveMode', 0);
     c.motorMinSpeed = _i(m, 'motorMinSpeed', 20);
     c.motorDefaultSpeed = _i(m, 'motorDefaultSpeed', 50);
     c.motorMaxSpeed = _i(m, 'motorMaxSpeed', 100);
@@ -167,6 +170,7 @@ class DeviceConfig {
     'servoPulseMax': servoPulseMax,
     'servoTraverseSpeedRight': servoTraverseSpeedRight,
     'servoTraverseSpeedLeft': servoTraverseSpeedLeft,
+    'driveMode': driveMode,
     'motorMinSpeed': motorMinSpeed,
     'motorDefaultSpeed': motorDefaultSpeed,
     'motorMaxSpeed': motorMaxSpeed,

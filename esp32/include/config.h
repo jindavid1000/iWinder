@@ -10,10 +10,10 @@
 //============================================================================
 //  4.2  引脚配置
 //============================================================================
-#define PIN_MOTOR_PWM         4       // 收线盘电机 MOS 管 PWM
+#define PIN_MOTOR_PWM         4       // 收线盘电机 MOS 管 PWM（IRLB8721 栅极，经 150Ω 电阻）
 #define PIN_SERVO_PWM         5       // 排线舵机 PWM
-#define PIN_ENDSTOP           14       // Endstop 限位信号
-#define PIN_ENDSTOP_RIGHT     32       // Endstop 限位信号 (右)
+#define PIN_ENDSTOP           32       // Endstop 限位信号
+#define PIN_ENDSTOP_RIGHT     14       // Endstop 限位信号 (右)
 #define PIN_HALL_SPOOL        27       // 霍尔 B — 料盘
 
 //============================================================================
@@ -60,12 +60,22 @@
 //============================================================================
 //  4.7  电机参数
 //============================================================================
+#define DRIVE_MODE               0       // 驱动模式: 0=电动(电机驱动) 1=手动(手摇驱动)
 #define MOTOR_PWM_FREQ            1000    // PWM 频率 (Hz)
 #define MOTOR_RES_BITS            10      // LEDC 分辨率位数 (0-1023)
 #define MOTOR_MIN_SPEED           20      // 最低稳定转速 (%)
 #define MOTOR_DEFAULT_SPEED       100     // 默认运行速度 (%)
 #define MOTOR_MAX_SPEED           100     // 最大转速 (%)
 #define MOTOR_SOFT_START_MS       1000    // 软启动时间 (ms)
+
+// 缠料检测（电动模式）: 电机运转但霍尔测得料盘 RPM 低于阈值并持续该时长 → 报错
+#define JAM_DETECT_MS             4000    // 判定时长 (ms，> 软启动时间)
+#define JAM_MIN_RPM               1.0f    // 料盘视为停转的 RPM 阈值
+#define JAM_MIN_MOTOR_PCT         10.0f   // 电机速度高于此值才参与判定
+
+// 停转校准（手动模式）: 手摇停转持续该时长且来回数已达标 → 触发周期校准
+#define MANUAL_STOP_CALIB_MS      2000    // 停转持续时间 (ms)
+#define MANUAL_MIN_RPM            0.5f    // 视为停转的 RPM 阈值
 
 
 //============================================================================
@@ -100,7 +110,7 @@
 //============================================================================
 //  4.12 硬件型号信息
 //============================================================================
-#define MOTOR_DRIVER_MODEL        "IRF520"
+#define MOTOR_DRIVER_MODEL        "IRLB8721"
 #define MOTOR_RATED_VOLTAGE       6.0f
 #define MOTOR_RATED_RPM           40
 #define SERVO_MODEL_NAME          "鑫辉18KG"
@@ -156,6 +166,7 @@ struct DeviceConfig {
     float    servoTraverseSpeedLeft;
 
     // --- 电机 ---
+    uint8_t  driveMode;           // 0=电动 1=手动(手摇)
     uint16_t motorMinSpeed;
     uint16_t motorDefaultSpeed;
     uint16_t motorMaxSpeed;
@@ -208,6 +219,7 @@ struct DeviceConfig {
         c.servoTraverseSpeedRight = SERVO_TRAVERSE_SPEED_RIGHT;
         c.servoTraverseSpeedLeft  = SERVO_TRAVERSE_SPEED_LEFT;
 
+        c.driveMode            = DRIVE_MODE;
         c.motorMinSpeed         = MOTOR_MIN_SPEED;
         c.motorDefaultSpeed     = MOTOR_DEFAULT_SPEED;
         c.motorMaxSpeed         = MOTOR_MAX_SPEED;

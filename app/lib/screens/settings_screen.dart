@@ -17,6 +17,23 @@ class SettingsScreen extends StatelessWidget {
         children: [
           _PushConfigButton(model: model),
           const SizedBox(height: 8),
+          _ParamCategory(title: '驱动模式', children: [
+            _DropdownField(label: '驱动方式', value: model.config.driveMode,
+              items: const [
+                DropdownMenuItem(value: 0, child: Text('电动（电机驱动）')),
+                DropdownMenuItem(value: 1, child: Text('手动（手摇驱动）')),
+              ],
+              onChanged: (v) { if (v != null) { model.config.driveMode = v; model.notifyListeners(); } },
+            ),
+            Text(
+              model.config.driveMode == 1
+                ? '手动模式：电机不输出，手摇驱动料盘，排线按实测转速自动跟随。'
+                  '缠料检测关闭；周期校准改为「手摇停转约 2 秒且来回数达标」时自动触发。'
+                : '电动模式：电机按设定转速驱动料盘，电机运转但料盘停转会触发缠料保护。'
+                  '每完成设定个来回自动校准一次排线位置。',
+              style: const TextStyle(fontSize: 12, color: Colors.grey, height: 1.5),
+            ),
+          ]),
           _ParamCategory(title: '引脚配置', children: [
             _NumField(label: '收线盘 PWM', value: model.config.pinMotorPwm.toDouble(),
                 onChanged: (v) => model.config.pinMotorPwm = v.round()),
@@ -59,7 +76,8 @@ class SettingsScreen extends StatelessWidget {
                 onChanged: (v) => model.config.traverseDistPerRev = v),
             _NumField(label: '丝杆导程 (mm)', value: model.config.leadScrewPitch,
                 onChanged: (v) => model.config.leadScrewPitch = v),
-            _NumField(label: '校准间隔 (来回)', value: model.config.calIntervalRounds.toDouble(),
+            _NumField(label: model.config.driveMode == 1 ? '校准间隔 (来回, 停转触发)' : '校准间隔 (来回)',
+                value: model.config.calIntervalRounds.toDouble(),
                 onChanged: (v) => model.config.calIntervalRounds = v.round()),
           ]),
           _ParamCategory(title: '舵机参数', children: [
