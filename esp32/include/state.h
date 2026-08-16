@@ -33,7 +33,8 @@ enum ErrorCode : uint8_t {
     ERR_STALL         = 2,
     ERR_BREAK         = 3,
     ERR_HOMING_FAILED = 4,
-    ERR_SENSOR        = 5
+    ERR_SENSOR        = 5,
+    ERR_JAM           = 6    // 缠料/堵转（电机运转但料盘未转）
 };
 
 // 通信链路

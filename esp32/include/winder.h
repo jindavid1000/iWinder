@@ -26,10 +26,17 @@ public:
     // 配置变更后重新初始化硬件
     void applyConfig();
 
+    // 驱动模式: 0=电动 1=手动(手摇，电机不输出)
+    bool isManualMode() const { return g_config.driveMode == 1; }
+
 private:
     uint32_t _lastTickMs   = 0;
     uint32_t _lastReportMs = 0;
     bool     _hwInited     = false;
+
+    // RPM 固定窗口统计
+    uint32_t _rpmWinStartMs = 0;   // 当前窗口起始时间
+    uint32_t _rpmWinPulses  = 0;   // 当前窗口内累计脉冲
 
     // 排线状态
     uint16_t _roundTrips   = 0;    // 当前周期来回数
@@ -61,6 +68,18 @@ private:
     // 速度
     int      _targetSpeed  = 0;
     float    _smoothRpm    = 0;  // RPM EMA 平滑值
+
+    // 手动模式: 停转触发校准
+    bool     _manualSeenSpinning = false;  // 本周期内检测到手摇转起过
+    uint32_t _manualZeroSinceMs  = 0;      // RPM 归零起始时间（0=正在转）
+
+    // 电动模式: 缠料检测（电机运转但料盘停转）
+    uint32_t _jamStallMs = 0;              // 停转起始时间（0=正常）
+
+    // 排线方向记忆（料盘停转舵机暂停后，恢复时用于继续原方向）
+    TraverseDir _travDir = DIR_RIGHT;
+
+    void enterCalibrating();
 
     void setState(DeviceState s);
     void setError(ErrorCode code, const String &msg);

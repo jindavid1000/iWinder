@@ -52,6 +52,7 @@ bool setConfigValue(DeviceConfig &c, const String &key, float value) {
     if (key == "servoTraverseSpeedLeft")  { c.servoTraverseSpeedLeft = value;     return true; }
 
     // 电机
+    if (key == "driveMode")          { c.driveMode = (uint8_t)value;              return true; }
     if (key == "motorMinSpeed")       { c.motorMinSpeed = (uint16_t)value;        return true; }
     if (key == "motorDefaultSpeed")   { c.motorDefaultSpeed = (uint16_t)value;    return true; }
     if (key == "motorMaxSpeed")       { c.motorMaxSpeed = (uint16_t)value;        return true; }
@@ -101,6 +102,7 @@ String getConfigJson(const DeviceConfig &c) {
     doc["servoPulseMax"]            = c.servoPulseMax;
     doc["servoTraverseSpeedRight"]  = c.servoTraverseSpeedRight;
     doc["servoTraverseSpeedLeft"]   = c.servoTraverseSpeedLeft;
+    doc["driveMode"]               = c.driveMode;
     doc["motorMinSpeed"]            = c.motorMinSpeed;
     doc["motorDefaultSpeed"]        = c.motorDefaultSpeed;
     doc["motorMaxSpeed"]            = c.motorMaxSpeed;
@@ -255,6 +257,7 @@ void Protocol::cmdSetParams(const String &jsonStr) {
 void Protocol::sendStatus() {
     JsonDocument doc;
     doc["type"]               = "status";
+    doc["drive_mode"]         = g_config.driveMode;
     doc["state"]              = stateName(g_state.state);
     doc["speed"]              = (int)g_state.currentSpeedPct;
     doc["spool_rpm"]          = roundf(g_state.spoolRpm * 10) / 10.0;

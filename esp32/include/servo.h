@@ -36,7 +36,7 @@ public:
 
 private:
     uint8_t    _pin        = 0;
-    uint8_t    _channel    = 1;     // LEDC channel (servo = 1)
+    uint8_t    _channel    = 2;     // LEDC channel (servo = 2, timer1 — 避免与电机 ch0 共享 timer0 导致频率/分辨率互相覆盖)
     bool       _initialized = false;
     uint16_t   _freq       = 50;
     uint8_t    _resBits    = 16;

@@ -31,7 +31,22 @@ class ControlScreen extends StatelessWidget {
           const SizedBox(height: 16),
           _TraverseIndicator(model: model),
           const SizedBox(height: 16),
-          _SpeedControl(model: model),
+          if (model.config.driveMode == 1)
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(children: [
+                  Icon(Icons.back_hand, color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text('手动模式：请手摇驱动料盘，排线将自动跟随转速。\n停转约 2 秒（且来回数达标）会自动校准排线位置。',
+                      style: TextStyle(fontSize: 13, color: Colors.grey, height: 1.5)),
+                  ),
+                ]),
+              ),
+            )
+          else
+            _SpeedControl(model: model),
           const SizedBox(height: 16),
           _ControlButtons(model: model),
         ],

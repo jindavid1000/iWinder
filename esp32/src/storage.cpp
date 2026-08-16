@@ -29,6 +29,15 @@ void Storage::loadConfig(DeviceConfig &cfg) {
     size_t len = prefs.getBytesLength(K_CFG);
     if (len == sizeof(DeviceConfig)) {
         prefs.getBytes(K_CFG, &cfg, sizeof(DeviceConfig));
+        // 迁移: 左右限位引脚对调（2026-08 接线修正）
+        if (cfg.pinEndstop == 14 && cfg.pinEndstopRight == 32) {
+            cfg.pinEndstop = 32;
+            cfg.pinEndstopRight = 14;
+            prefs.end();
+            saveConfig(cfg);
+            Serial.println("[Storage] 已迁移限位引脚: 左=32 右=14");
+            return;
+        }
     } else {
         cfg = DeviceConfig::defaults();
     }

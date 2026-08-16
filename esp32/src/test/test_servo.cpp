@@ -7,6 +7,7 @@ void setup() {
 
     uint8_t ch = 1;
     setupLEDC(PIN_SERVO_PWM, ch, 50, 14);
+    parkUnusedOutputs(PIN_SERVO_PWM);
     auto wp = [&](uint16_t us) {
         ledcWrite(ch, (uint32_t)us * ((1 << 14) - 1) / 20000);
     };

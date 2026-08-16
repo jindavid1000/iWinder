@@ -64,6 +64,9 @@ void Winder::setError(ErrorCode code, const String &msg) {
 void Winder::startTask(int speedPct) {
     if (g_state.state == STATE_ERROR) return;
     _targetSpeed = speedPct;
+    _manualSeenSpinning = false;
+    _manualZeroSinceMs  = 0;
+    _jamStallMs         = 0;
 
     if (g_state.state == STATE_IDLE || g_state.state == STATE_COMPLETED) {
         g_motor.stop();
@@ -113,7 +116,7 @@ void Winder::goHome() {
 
 void Winder::setSpeed(int speedPct) {
     _targetSpeed = speedPct;
-    if (g_state.state == STATE_RUNNING) {
+    if (g_state.state == STATE_RUNNING && !isManualMode()) {
         g_motor.setSpeedPct(speedPct);
     }
 }
@@ -358,11 +361,15 @@ void Winder::doPositioning() {
             // 有速度 → 开始绕线，从起始位置向右移动
             g_state.calibCountdown = g_config.calIntervalRounds;
             _roundTrips = 0;
-            g_motor.setSpeedPct(_targetSpeed);
+            if (isManualMode()) {
+                g_motor.stop();               // 手动模式: 电机不输出，靠手摇
+            } else {
+                g_motor.setSpeedPct(_targetSpeed);
+            }
             g_state.runStartMs = millis();
             g_servo.moveRight();
             setState(STATE_RUNNING);
-            Serial.println("[Winder] 开始绕线");
+            Serial.println(isManualMode() ? "[Winder] 开始绕线 (手动模式)" : "[Winder] 开始绕线");
         } else {
             // 无速度 → 仅回原点，待机
             setState(STATE_IDLE);
@@ -382,6 +389,7 @@ void Winder::doPositioning() {
 // ============================================================================
 
 void Winder::doRunning(uint32_t dtMs) {
+    uint32_t now = millis();
     uint32_t newSpool = g_sensors.getSpoolPulsesAndReset();
 
     g_state.spoolPulses += newSpool;
@@ -395,18 +403,56 @@ void Winder::doRunning(uint32_t dtMs) {
     g_state.currentLayer      = g_slip.getCurrentLayer();
     g_state.currentSpeedPct   = g_motor.getCurrentSpeedPct();
 
-    // RPM 平滑：用更长的窗口算瞬时 RPM，再 EMA 滤波
-    // 每次脉冲到来时刷新估算，无脉冲时用衰减估算
-    if (newSpool > 0 && dtSec > 0) {
-        float instantRpm = (newSpool / (float)g_config.hallSpoolMagnets) / dtSec * 60.0f;
-        // EMA: 新值占 15%，旧值占 85%，平滑过渡
-        _smoothRpm = _smoothRpm * 0.85f + instantRpm * 0.15f;
-    } else {
-        // 没有新脉冲：缓慢衰减（电机不可能瞬间停）
-        _smoothRpm *= 0.95f;
-        if (_smoothRpm < 1.0f) _smoothRpm = 0;
+    // RPM 估算：固定时间窗口统计（窗口 250ms）
+    // 每个窗口内累计脉冲，窗口结束时计算平均 RPM，再 EMA 平滑。
+    // 之前按 5ms tick 算瞬时 RPM，脉冲稀疏时数值在 0 和 3000 之间跳，
+    // 导致排线舵机速度忽快忽慢。
+    _rpmWinPulses += newSpool;
+    if (now - _rpmWinStartMs >= 250) {
+        float winSec = (now - _rpmWinStartMs) / 1000.0f;
+        float winRpm = (_rpmWinPulses / (float)g_config.hallSpoolMagnets) / winSec * 60.0f;
+        if (_smoothRpm == 0) {
+            _smoothRpm = winRpm;          // 首窗直接采用
+        } else {
+            // 窗口内几乎无脉冲 → 快速衰减，让停转时排线尽快暂停
+            // （否则 EMA 0.6/0.4 要滑 ~2s 才降到停转阈值以下）
+            float k = (winRpm < MANUAL_MIN_RPM) ? 0.7f : 0.4f;
+            _smoothRpm = _smoothRpm * (1.0f - k) + winRpm * k;
+        }
+        _rpmWinStartMs = now;
+        _rpmWinPulses  = 0;
     }
     g_state.spoolRpm = _smoothRpm;
+
+    if (isManualMode()) {
+        // ===== 手动模式: 停转触发校准 =====
+        // 条件: 本周期内手摇转起过 + 已完成至少 calIntervalRounds 个来回
+        //       + 手摇停转持续 MANUAL_STOP_CALIB_MS
+        if (_smoothRpm > MANUAL_MIN_RPM) {
+            _manualSeenSpinning = true;
+            _manualZeroSinceMs  = 0;
+        } else if (_manualSeenSpinning &&
+                   _roundTrips >= (g_config.calIntervalRounds > 0 ? g_config.calIntervalRounds : 1)) {
+            if (_manualZeroSinceMs == 0) _manualZeroSinceMs = now;
+            if (now - _manualZeroSinceMs >= MANUAL_STOP_CALIB_MS) {
+                Serial.println("[Winder] 手动模式: 检测到停转，触发校准");
+                enterCalibrating();
+                return;
+            }
+        }
+    } else {
+        // ===== 电动模式: 缠料检测 =====
+        // 电机在转但霍尔测得料盘停转，持续 JAM_DETECT_MS → 缠料/堵转
+        if (g_motor.getCurrentSpeedPct() > JAM_MIN_MOTOR_PCT && _smoothRpm < JAM_MIN_RPM) {
+            if (_jamStallMs == 0) _jamStallMs = now;
+            else if (now - _jamStallMs >= JAM_DETECT_MS) {
+                setError(ERR_JAM, "缠料/堵转: 电机运转但料盘未转动，请检查排线");
+                return;
+            }
+        } else {
+            _jamStallMs = 0;
+        }
+    }
 
     // 调试：每 2 秒打印一次
     static uint32_t lastDbgMs = 0;
@@ -441,8 +487,19 @@ void Winder::processTraverse(uint32_t dtMs) {
     float servoFullSpeed = (g_servo.getDirection() == DIR_LEFT) ? g_config.servoTraverseSpeedLeft
                                                                   : g_config.servoTraverseSpeedRight;
     if (servoFullSpeed > 0.1f && neededSpeed > 0) {
+        // 料盘在转: 若舵机此前因停转被暂停，恢复原方向继续
+        if (g_servo.getDirection() == DIR_NONE) {
+            if (_travDir == DIR_LEFT) g_servo.moveLeft();
+            else                      g_servo.moveRight();
+        }
         float frac = neededSpeed / servoFullSpeed;
         g_servo.setSpeedFraction(frac);
+    } else {
+        // 料盘停转: 排线随之暂停（否则位置估算会与实际漂移）
+        if (g_servo.getDirection() != DIR_NONE) {
+            _travDir = g_servo.getDirection();
+            g_servo.stop();
+        }
     }
 
     // 物理限位安全保护（优先于位置估算换向）
@@ -459,13 +516,9 @@ void Winder::processTraverse(uint32_t dtMs) {
                                 ? (g_config.calIntervalRounds - _roundTrips) : 0;
         Serial.printf("[Winder] 左限位触发换向 pos=%.1f, 来回=%d\n", pos, _roundTrips);
 
-        if (_roundTrips >= g_config.calIntervalRounds) {
-            setState(STATE_CALIBRATING);
-            g_motor.stop();
-            _calibGoRight = true;  // 校准去右限位（原点）
-            _calibReturning = false;
-            g_servo.moveRight();
-            Serial.println("[Winder] 校准: 去右限位（原点）");
+        // 手动模式不按来回数触发校准（改为停转触发，见 doRunning）
+        if (!isManualMode() && _roundTrips >= g_config.calIntervalRounds) {
+            enterCalibrating();
             return;
         }
     } else {
@@ -484,13 +537,9 @@ void Winder::processTraverse(uint32_t dtMs) {
             Serial.printf("[Winder] 左端换向 pos=%.1f, 来回=%d, 距校准=%d\n",
                           pos, _roundTrips, g_state.calibCountdown);
 
-            if (_roundTrips >= g_config.calIntervalRounds) {
-                setState(STATE_CALIBRATING);
-                g_motor.stop();
-                _calibGoRight = true;  // 校准去右限位（原点）
-                _calibReturning = false;
-                g_servo.moveRight();
-                Serial.println("[Winder] 校准: 去右限位（原点）");
+            // 手动模式不按来回数触发校准（改为停转触发，见 doRunning）
+            if (!isManualMode() && _roundTrips >= g_config.calIntervalRounds) {
+                enterCalibrating();
             }
         }
     }
@@ -535,6 +584,19 @@ void Winder::processAutoStop() {
 //  周期性校准（双 Endstop）
 // ============================================================================
 
+// 进入周期校准（电动: 来回数达标触发; 手动: 停转触发）
+void Winder::enterCalibrating() {
+    setState(STATE_CALIBRATING);
+    g_motor.stop();
+    _calibGoRight   = true;   // 校准去右限位（原点）
+    _calibReturning = false;
+    _manualSeenSpinning = false;   // 手动模式: 校准后重新等待手摇转起
+    _manualZeroSinceMs  = 0;
+    _jamStallMs         = 0;
+    g_servo.moveRight();
+    Serial.println("[Winder] 校准: 去右限位（原点）");
+}
+
 void Winder::doCalibrating(uint32_t dtMs) {
     g_servo.updatePosition(dtMs);
     g_state.traversePos = g_servo.getPosition();
@@ -566,7 +628,12 @@ void Winder::doCalibrating(uint32_t dtMs) {
             g_state.roundTrips = 0;
             g_state.calibCountdown = g_config.calIntervalRounds;
             _calibReturning = false;
-            g_motor.setSpeedPct(_targetSpeed);
+            _travDir = DIR_RIGHT;   // 起始位置向右绕线
+            if (isManualMode()) {
+                g_motor.stop();     // 手动模式继续手摇
+            } else {
+                g_motor.setSpeedPct(_targetSpeed);
+            }
             g_servo.moveRight();
             setState(STATE_RUNNING);
             Serial.println("[Winder] 校准完成，恢复绕线");
