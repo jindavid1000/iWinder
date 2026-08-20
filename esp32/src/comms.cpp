@@ -4,6 +4,7 @@
 #include "config.h"
 #include <WiFi.h>
 #include <WiFiUdp.h>
+#include <ESPmDNS.h>
 
 Comms g_comms;
 
@@ -83,6 +84,12 @@ bool Comms::wifiConnectSTA() {
         g_state.wifiIP = ip.toString();
         g_state.wifiSSID = ssid;
         s_broadcastUdp.begin(8888);
+
+        // mDNS: 家庭 WiFi 内用 http://iwinder.local 访问（iOS/macOS 浏览器原生支持）
+        if (MDNS.begin("iwinder")) {
+            MDNS.addService("http", "tcp", 80);
+            Serial.println("[WiFi] mDNS 已启动: http://iwinder.local");
+        }
     } else {
         Serial.println("[WiFi] STA 失败，保持 AP 模式");
     }

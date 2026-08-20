@@ -9,6 +9,7 @@
 #include "comms.h"
 #include "protocol.h"
 #include "winder.h"
+#include "webui.h"
 #include "led.h"
 #include <WiFi.h>
 
@@ -43,8 +44,9 @@ void setup() {
     Serial.println("[Main] 4/5 初始化状态灯");
     g_led.begin();
 
-    // 5. 寻原点
-    Serial.println("[Main] 5/5 寻原点");
+    // 5. Web 界面（WiFi 就绪后即可服务）
+    Serial.println("[Main] 5/5 启动 Web 界面");
+    g_webui.begin();
     g_winder.goHome();
 
     Serial.println("[Main] 初始化完成\n");
@@ -53,6 +55,7 @@ void setup() {
 void loop() {
     g_winder.update();
     g_comms.update();
+    g_webui.update();
     g_led.setState(g_state.state, false, g_state.wifiConnected);
     g_led.update();
 }
