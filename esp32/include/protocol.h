@@ -16,6 +16,9 @@ public:
     // 发送状态上报
     void sendStatus();
 
+    // 构建 JSON（供 TCP 上报与 Web 接口共用）
+    String buildStatusJson();
+
     // 发送错误
     void sendError(ErrorCode code, const String &msg);
 

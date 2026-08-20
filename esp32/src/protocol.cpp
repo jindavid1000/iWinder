@@ -270,7 +270,7 @@ void Protocol::cmdSetParams(const String &jsonStr) {
 
 // --- 状态上报 ---
 
-void Protocol::sendStatus() {
+String Protocol::buildStatusJson() {
     JsonDocument doc;
     doc["type"]               = "status";
     doc["drive_mode"]         = g_config.driveMode;
@@ -296,7 +296,11 @@ void Protocol::sendStatus() {
 
     String out;
     serializeJson(doc, out);
-    g_comms.send(out);
+    return out;
+}
+
+void Protocol::sendStatus() {
+    g_comms.send(buildStatusJson());
 }
 
 void Protocol::sendError(ErrorCode code, const String &msg) {
