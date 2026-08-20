@@ -9,6 +9,7 @@ uint8_t    Sensors::_pinEndstopRight = 0;
 volatile uint32_t Sensors::_spoolCount   = 0;
 volatile uint32_t Sensors::_totalSpool   = 0;
 volatile uint32_t Sensors::_lastSpoolUs  = 0;
+volatile uint32_t Sensors::_spoolIntervalUs = 0;
 volatile uint32_t Sensors::_lastEndstopUs = 0;
 volatile uint32_t Sensors::_lastEndstopRightUs = 0;
 volatile bool     Sensors::_endstopState  = false;
@@ -19,7 +20,9 @@ EndstopCallback   Sensors::_endstopCb = nullptr;
 
 void IRAM_ATTR Sensors::isrHallSpool() {
     uint32_t now = micros();
-    if (now - _lastSpoolUs < _hallDebounceUs) return;
+    uint32_t interval = now - _lastSpoolUs;
+    if (interval < _hallDebounceUs) return;
+    _spoolIntervalUs = interval;
     _lastSpoolUs = now;
     _spoolCount++;
     _totalSpool++;
@@ -105,5 +108,8 @@ bool Sensors::isEndstopTriggered(bool right) {
     if (right) _endstopRightState = false;
     else       _endstopState = false;
     portEXIT_CRITICAL(&g_dataMux);
+    // 电平确认：ISR 捕获边沿后，引脚当前仍为低才认为是真实触发。
+    // 否则舵机启动等电流冲击在地线上弹出的微秒级毛刺会被当成限位信号。
+    if (v && digitalRead(right ? _pinEndstopRight : _pinEndstop) != LOW) v = false;
     return v;
 }

@@ -33,6 +33,9 @@ public:
     // 累计脉冲（从启动开始）
     uint32_t getTotalSpoolPulses() const { return _totalSpool; }
 
+    // 最近两次脉冲的间隔 (us)，用于低速下的转速估算
+    uint32_t getSpoolIntervalUs() const { return _spoolIntervalUs; }
+
     // ISR 入口
     static void IRAM_ATTR isrHallSpool();
     static void IRAM_ATTR isrEndstop();
@@ -48,6 +51,7 @@ private:
     static volatile uint32_t _spoolCount;
     static volatile uint32_t _totalSpool;
     static volatile uint32_t _lastSpoolUs;
+    static volatile uint32_t _spoolIntervalUs;   // 最近一次脉冲间隔
     static volatile uint32_t _lastEndstopUs;
     static volatile uint32_t _lastEndstopRightUs;
     static volatile bool     _endstopState;

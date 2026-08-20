@@ -27,6 +27,7 @@ class DeviceConfig {
   double traverseRightEnd;
   double traverseDistPerRev;
   double leadScrewPitch;
+  double travelRangeMm; // 左右限位之间的实际物理距离
   int calIntervalRounds;
 
   // 舵机
@@ -38,6 +39,14 @@ class DeviceConfig {
   int servoPulseMax;
   double servoTraverseSpeedRight;
   double servoTraverseSpeedLeft;
+  double servoSpeedExp; // 速度幂律指数（标定自动写入，1.0=线性）
+
+  // 排线编码器（可选 AS5600 闭环）
+  int traverseEncoder; // 0=舵机开环估算 1=AS5600 闭环
+  int pinEncSda;
+  int pinEncScl;
+  double encGearRatio; // 丝杆转速 / 编码器轴转速
+  double encMmPerRev; // 每编码器圈位移 mm（标定自动写入）
 
   // 电机
   int driveMode; // 0=电动 1=手动(手摇)
@@ -62,8 +71,8 @@ class DeviceConfig {
     this.pinEndstop = 32,
     this.pinEndstopRight = 14,
     this.pinHallSpool = 27,
-    this.hallSpoolMagnets = 4,
-    this.hallDebounceUs = 5000,
+    this.hallSpoolMagnets = 8,
+    this.hallDebounceUs = 25000,
     this.endstopDebounceUs = 20000,
     this.spoolOuterDiameter = 200.0,
     this.spoolWidth = 68.0,
@@ -71,22 +80,29 @@ class DeviceConfig {
     this.spoolCoreDiaNoCard = 81.5,
     this.spoolHasCardboard = true,
     this.filamentDiameter = 1.75,
-    this.traverseLeftStart = 0.0,
-    this.traverseRightEnd = 68.0,
+    this.traverseLeftStart = 12.0,
+    this.traverseRightEnd = 80.0,
     this.traverseDistPerRev = 1.75,
-    this.leadScrewPitch = 8.0,
+    this.leadScrewPitch = 22.0,
+    this.travelRangeMm = 80.0,
     this.calIntervalRounds = 3,
     this.servoStopPulse = 1500,
-    this.servoLeftPulse = 1000,
-    this.servoRightPulse = 2000,
-    this.servoHomePulse = 1300,
+    this.servoLeftPulse = 500,
+    this.servoRightPulse = 2500,
+    this.servoHomePulse = 500,
     this.servoPulseMin = 500,
     this.servoPulseMax = 2500,
     this.servoTraverseSpeedRight = 0.0,
     this.servoTraverseSpeedLeft = 0.0,
+    this.servoSpeedExp = 1.0,
+    this.traverseEncoder = 0,
+    this.pinEncSda = 21,
+    this.pinEncScl = 22,
+    this.encGearRatio = 3.0,
+    this.encMmPerRev = 0.0,
     this.driveMode = 0,
     this.motorMinSpeed = 20,
-    this.motorDefaultSpeed = 50,
+    this.motorDefaultSpeed = 100,
     this.motorMaxSpeed = 100,
     this.motorSoftStartMs = 1000,
     this.autoStopMode = 0,
@@ -105,8 +121,8 @@ class DeviceConfig {
     c.pinEndstop = _i(m, 'pinEndstop', 32);
     c.pinEndstopRight = _i(m, 'pinEndstopRight', 14);
     c.pinHallSpool = _i(m, 'pinHallSpool', 27);
-    c.hallSpoolMagnets = _i(m, 'hallSpoolMagnets', 4);
-    c.hallDebounceUs = _i(m, 'hallDebounceUs', 5000);
+    c.hallSpoolMagnets = _i(m, 'hallSpoolMagnets', 8);
+    c.hallDebounceUs = _i(m, 'hallDebounceUs', 25000);
     c.endstopDebounceUs = _i(m, 'endstopDebounceUs', 20000);
     c.spoolOuterDiameter = _d(m, 'spoolOuterDiameter', 200.0);
     c.spoolWidth = _d(m, 'spoolWidth', 68.0);
@@ -114,22 +130,29 @@ class DeviceConfig {
     c.spoolCoreDiaNoCard = _d(m, 'spoolCoreDiaNoCard', 81.5);
     c.spoolHasCardboard = _i(m, 'spoolHasCardboard', 1) != 0;
     c.filamentDiameter = _d(m, 'filamentDiameter', 1.75);
-    c.traverseLeftStart = _d(m, 'traverseLeftStart', 0.0);
-    c.traverseRightEnd = _d(m, 'traverseRightEnd', 68.0);
+    c.traverseLeftStart = _d(m, 'traverseLeftStart', 12.0);
+    c.traverseRightEnd = _d(m, 'traverseRightEnd', 80.0);
     c.traverseDistPerRev = _d(m, 'traverseDistPerRev', 1.75);
-    c.leadScrewPitch = _d(m, 'leadScrewPitch', 8.0);
+    c.leadScrewPitch = _d(m, 'leadScrewPitch', 22.0);
+    c.travelRangeMm = _d(m, 'travelRangeMm', 80.0);
     c.calIntervalRounds = _i(m, 'calIntervalRounds', 3);
     c.servoStopPulse = _i(m, 'servoStopPulse', 1500);
-    c.servoLeftPulse = _i(m, 'servoLeftPulse', 1000);
-    c.servoRightPulse = _i(m, 'servoRightPulse', 2000);
-    c.servoHomePulse = _i(m, 'servoHomePulse', 1300);
+    c.servoLeftPulse = _i(m, 'servoLeftPulse', 500);
+    c.servoRightPulse = _i(m, 'servoRightPulse', 2500);
+    c.servoHomePulse = _i(m, 'servoHomePulse', 500);
     c.servoPulseMin = _i(m, 'servoPulseMin', 500);
     c.servoPulseMax = _i(m, 'servoPulseMax', 2500);
     c.servoTraverseSpeedRight = _d(m, 'servoTraverseSpeedRight', 0.0);
     c.servoTraverseSpeedLeft = _d(m, 'servoTraverseSpeedLeft', 0.0);
+    c.servoSpeedExp = _d(m, 'servoSpeedExp', 1.0);
+    c.traverseEncoder = _i(m, 'traverseEncoder', 0);
+    c.pinEncSda = _i(m, 'pinEncSda', 21);
+    c.pinEncScl = _i(m, 'pinEncScl', 22);
+    c.encGearRatio = _d(m, 'encGearRatio', 3.0);
+    c.encMmPerRev = _d(m, 'encMmPerRev', 0.0);
     c.driveMode = _i(m, 'driveMode', 0);
     c.motorMinSpeed = _i(m, 'motorMinSpeed', 20);
-    c.motorDefaultSpeed = _i(m, 'motorDefaultSpeed', 50);
+    c.motorDefaultSpeed = _i(m, 'motorDefaultSpeed', 100);
     c.motorMaxSpeed = _i(m, 'motorMaxSpeed', 100);
     c.motorSoftStartMs = _i(m, 'motorSoftStartMs', 1000);
     c.autoStopMode = _i(m, 'autoStopMode', 0);
@@ -161,6 +184,7 @@ class DeviceConfig {
     'traverseRightEnd': traverseRightEnd,
     'traverseDistPerRev': traverseDistPerRev,
     'leadScrewPitch': leadScrewPitch,
+    'travelRangeMm': travelRangeMm,
     'calIntervalRounds': calIntervalRounds,
     'servoStopPulse': servoStopPulse,
     'servoLeftPulse': servoLeftPulse,
@@ -170,6 +194,12 @@ class DeviceConfig {
     'servoPulseMax': servoPulseMax,
     'servoTraverseSpeedRight': servoTraverseSpeedRight,
     'servoTraverseSpeedLeft': servoTraverseSpeedLeft,
+    'servoSpeedExp': servoSpeedExp,
+    'traverseEncoder': traverseEncoder,
+    'pinEncSda': pinEncSda,
+    'pinEncScl': pinEncScl,
+    'encGearRatio': encGearRatio,
+    'encMmPerRev': encMmPerRev,
     'driveMode': driveMode,
     'motorMinSpeed': motorMinSpeed,
     'motorDefaultSpeed': motorDefaultSpeed,

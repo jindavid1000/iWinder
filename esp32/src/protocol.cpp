@@ -39,6 +39,7 @@ bool setConfigValue(DeviceConfig &c, const String &key, float value) {
     if (key == "traverseRightEnd")    { c.traverseRightEnd = value;               return true; }
     if (key == "traverseDistPerRev")  { c.traverseDistPerRev = value;             return true; }
     if (key == "leadScrewPitch")      { c.leadScrewPitch = value;                 return true; }
+    if (key == "travelRangeMm")       { c.travelRangeMm = value;                  return true; }
     if (key == "calIntervalRounds")   { c.calIntervalRounds = (uint8_t)value;     return true; }
 
     // 舵机
@@ -50,6 +51,14 @@ bool setConfigValue(DeviceConfig &c, const String &key, float value) {
     if (key == "servoPulseMax")       { c.servoPulseMax = (uint16_t)value;        return true; }
     if (key == "servoTraverseSpeedRight") { c.servoTraverseSpeedRight = value;    return true; }
     if (key == "servoTraverseSpeedLeft")  { c.servoTraverseSpeedLeft = value;     return true; }
+    if (key == "servoSpeedExp")           { c.servoSpeedExp = value;              return true; }
+
+    // 排线编码器
+    if (key == "traverseEncoder")        { c.traverseEncoder = (uint8_t)value;   return true; }
+    if (key == "pinEncSda")              { c.pinEncSda = (uint8_t)value;         return true; }
+    if (key == "pinEncScl")              { c.pinEncScl = (uint8_t)value;         return true; }
+    if (key == "encGearRatio")           { c.encGearRatio = value;               return true; }
+    if (key == "encMmPerRev")            { c.encMmPerRev = value;                return true; }
 
     // 电机
     if (key == "driveMode")          { c.driveMode = (uint8_t)value;              return true; }
@@ -93,6 +102,7 @@ String getConfigJson(const DeviceConfig &c) {
     doc["traverseRightEnd"]         = c.traverseRightEnd;
     doc["traverseDistPerRev"]       = c.traverseDistPerRev;
     doc["leadScrewPitch"]           = c.leadScrewPitch;
+    doc["travelRangeMm"]            = c.travelRangeMm;
     doc["calIntervalRounds"]        = c.calIntervalRounds;
     doc["servoStopPulse"]           = c.servoStopPulse;
     doc["servoLeftPulse"]           = c.servoLeftPulse;
@@ -102,6 +112,12 @@ String getConfigJson(const DeviceConfig &c) {
     doc["servoPulseMax"]            = c.servoPulseMax;
     doc["servoTraverseSpeedRight"]  = c.servoTraverseSpeedRight;
     doc["servoTraverseSpeedLeft"]   = c.servoTraverseSpeedLeft;
+    doc["servoSpeedExp"]            = c.servoSpeedExp;
+    doc["traverseEncoder"]          = c.traverseEncoder;
+    doc["pinEncSda"]                = c.pinEncSda;
+    doc["pinEncScl"]                = c.pinEncScl;
+    doc["encGearRatio"]             = c.encGearRatio;
+    doc["encMmPerRev"]              = c.encMmPerRev;
     doc["driveMode"]               = c.driveMode;
     doc["motorMinSpeed"]            = c.motorMinSpeed;
     doc["motorDefaultSpeed"]        = c.motorDefaultSpeed;

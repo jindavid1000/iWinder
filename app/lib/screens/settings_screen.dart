@@ -49,6 +49,13 @@ class SettingsScreen extends StatelessWidget {
           _ParamCategory(title: '传感器参数', children: [
             _NumField(label: '料盘磁铁数', value: model.config.hallSpoolMagnets.toDouble(),
                 onChanged: (v) => model.config.hallSpoolMagnets = v.round()),
+            _NumField(label: '霍尔去抖 (us)', value: model.config.hallDebounceUs.toDouble(),
+                onChanged: (v) => model.config.hallDebounceUs = v.round()),
+            const Text(
+              '去抖时间同时是脉冲间隔下限（25000us ≈ 8 磁铁最大 300RPM），'
+              '用于滤除电机 PWM 耦合到霍尔线的噪声。若真实转速超过 300RPM 需调小。',
+              style: TextStyle(fontSize: 12, color: Colors.grey, height: 1.5),
+            ),
           ]),
           _ParamCategory(title: '料盘参数', children: [
             _NumField(label: '料盘外径 (mm)', value: model.config.spoolOuterDiameter,
@@ -76,9 +83,16 @@ class SettingsScreen extends StatelessWidget {
                 onChanged: (v) => model.config.traverseDistPerRev = v),
             _NumField(label: '丝杆导程 (mm)', value: model.config.leadScrewPitch,
                 onChanged: (v) => model.config.leadScrewPitch = v),
+            _NumField(label: '限位间距 (mm)', value: model.config.travelRangeMm,
+                onChanged: (v) => model.config.travelRangeMm = v),
             _NumField(label: model.config.driveMode == 1 ? '校准间隔 (来回, 停转触发)' : '校准间隔 (来回)',
                 value: model.config.calIntervalRounds.toDouble(),
                 onChanged: (v) => model.config.calIntervalRounds = v.round()),
+            const Text(
+              '绕线宽度 = 右终止位置 − 左起始位置（想绕窄一点就改这两个值）。\n'
+              '「料盘宽度」只用于长度/层数计算，不影响绕线范围。',
+              style: TextStyle(fontSize: 12, color: Colors.grey, height: 1.5),
+            ),
           ]),
           _ParamCategory(title: '舵机参数', children: [
             _NumField(label: '停止 PWM (us)', value: model.config.servoStopPulse.toDouble(),
@@ -93,6 +107,13 @@ class SettingsScreen extends StatelessWidget {
                 onChanged: (v) => model.config.servoTraverseSpeedRight = v),
             _NumField(label: '左行速度 (mm/s)', value: model.config.servoTraverseSpeedLeft,
                 onChanged: (v) => model.config.servoTraverseSpeedLeft = v),
+            _NumField(label: '速度指数 k', value: model.config.servoSpeedExp,
+                onChanged: (v) => model.config.servoSpeedExp = v),
+            const Text(
+              'k 由舵机速度标定自动测量（速度 = 满速 × 比例^k）。'
+              'k=1 线性；舵机低速偏快时 k<1。一般无需手改。',
+              style: TextStyle(fontSize: 12, color: Colors.grey, height: 1.5),
+            ),
           ]),
           Card(
             child: Padding(
@@ -154,6 +175,28 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
           ),
+          _ParamCategory(title: '排线编码器 (可选 AS5600)', children: [
+            _DropdownField(label: '位置反馈', value: model.config.traverseEncoder,
+              items: const [
+                DropdownMenuItem(value: 0, child: Text('舵机开环估算（默认）')),
+                DropdownMenuItem(value: 1, child: Text('AS5600 编码器闭环')),
+              ],
+              onChanged: (v) { if (v != null) { model.config.traverseEncoder = v; model.notifyListeners(); } },
+            ),
+            _NumField(label: '编码器 SDA', value: model.config.pinEncSda.toDouble(),
+                onChanged: (v) => model.config.pinEncSda = v.round()),
+            _NumField(label: '编码器 SCL', value: model.config.pinEncScl.toDouble(),
+                onChanged: (v) => model.config.pinEncScl = v.round()),
+            _NumField(label: '增速齿比 (丝杆/编码器)', value: model.config.encGearRatio,
+                onChanged: (v) => model.config.encGearRatio = v),
+            Text(
+              model.config.traverseEncoder == 1
+                ? '闭环模式：AS5600 装在舵机输出轴（未减速端）。齿比 = 丝杆转速 ÷ 编码器轴转速。'
+                  '切换后需跑一次「舵机速度标定」，会自动测出每圈位移并写入。'
+                : '未启用。装好 AS5600（SDA/SCL/3.3V/GND）后切到闭环可大幅提升排线定位精度。',
+              style: const TextStyle(fontSize: 12, color: Colors.grey, height: 1.5),
+            ),
+          ]),
           _ParamCategory(title: '电机参数', children: [
             _NumField(label: '最低转速 (%)', value: model.config.motorMinSpeed.toDouble(),
                 onChanged: (v) => model.config.motorMinSpeed = v.round()),

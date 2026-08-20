@@ -15,12 +15,16 @@
 #define PIN_ENDSTOP           32       // Endstop 限位信号
 #define PIN_ENDSTOP_RIGHT     14       // Endstop 限位信号 (右)
 #define PIN_HALL_SPOOL        27       // 霍尔 B — 料盘
+#define PIN_ENC_SDA           21       // AS5600 编码器 SDA（可选，闭环排线用）
+#define PIN_ENC_SCL           22       // AS5600 编码器 SCL
 
 //============================================================================
 //  4.3  传感器参数
 //============================================================================
 #define HALL_SPOOL_MAGNETS        8       // 料盘单圈磁铁数
-#define HALL_DEBOUNCE_US          5000    // 霍尔去抖动 (us)
+#define HALL_DEBOUNCE_US          25000   // 霍尔去抖动 (us)。
+                                          // 兼作脉冲合理性下限: 8磁铁时等效最大 ~300RPM，
+                                          // 滤除电机PWM耦合到霍尔线的噪声脉冲（5ms 挡不住）
 #define ENDSTOP_DEBOUNCE_US       20000   // Endstop 去抖动 (us)
 
 //============================================================================
@@ -35,8 +39,8 @@
 //============================================================================
 //  4.5  运动参数
 //============================================================================
-#define TRAVERSE_LEFT_START       0.0f    // 绕线左起始位置 (mm，相对于原点)
-#define TRAVERSE_RIGHT_END        68.0f   // 绕线右终止换向位置 (mm)
+#define TRAVERSE_LEFT_START       12.0f   // 绕线左起始位置 (mm，安装偏右，避开左限位)
+#define TRAVERSE_RIGHT_END        80.0f   // 绕线右终止换向位置 (mm)
 #define TRAVERSE_DIST_PER_REV     1.75f   // 料盘每转一圈排线移动距离 (mm)
 #define LEAD_SCREW_PITCH          22.0f   // 丝杆导程 (mm/圈, T8 四头)
 #define CAL_INTERVAL_ROUNDS       3       // 每 N 个来回校准一次
@@ -53,7 +57,19 @@
 #define SERVO_PWM_FREQ            50      // PWM 频率 (Hz)
 #define SERVO_PULSE_MIN           500     // 满速左行极限 (us)
 #define SERVO_PULSE_MAX           2500    // 满速右行极限 (us)
+#define SERVO_SPEED_EXP           1.0f    // 舵机速度幂律指数 k（速度=满速×比例^k）。
+                                          // 标定时自动测量，1.0=线性；舵机低速偏快则 k<1
 #define SERVO_RES_BITS            14      // LEDC 分辨率位数
+#define SERVO_MIN_FRAC            0.30f   // 可靠起动的最小速度比例。
+                                          // 不能太低: 低速切片的脉宽偏移太小，会被电机 PWM
+                                          // 耦合进舵机线的噪声偏置反超，导致低速方向反转
+#define SERVO_BURST_MS            40      // 切片单次运动时长 (ms)，须大于舵机机电响应时间(~20ms)。
+                                          // 更慢的平均速度靠拉长运动间隔实现，而非缩短单次运动
+
+// 排线位置反馈: 0=开环估算(默认) 1=AS5600 磁编码器闭环
+// 编码器直测丝杆（推荐）→ 齿比 1.0，mm/圈 = 丝杆导程
+#define TRAVERSE_ENCODER          0
+#define ENC_GEAR_RATIO            1.0f
 #define SERVO_TRAVERSE_SPEED_RIGHT  0.0f  // 右行线速度 (mm/s, 0=未标定)
 #define SERVO_TRAVERSE_SPEED_LEFT   0.0f  // 左行线速度 (mm/s, 0=未标定)
 
@@ -61,7 +77,9 @@
 //  4.7  电机参数
 //============================================================================
 #define DRIVE_MODE               0       // 驱动模式: 0=电动(电机驱动) 1=手动(手摇驱动)
-#define MOTOR_PWM_FREQ            1000    // PWM 频率 (Hz)
+#define MOTOR_PWM_FREQ            20000   // PWM 频率 (Hz)。
+                                          // 用 20kHz 而非 1kHz: GPIO4 与舵机信号线相邻，
+                                          // 低频 PWM 会耦合进舵机信号导致排线缓慢漂移
 #define MOTOR_RES_BITS            10      // LEDC 分辨率位数 (0-1023)
 #define MOTOR_MIN_SPEED           20      // 最低稳定转速 (%)
 #define MOTOR_DEFAULT_SPEED       100     // 默认运行速度 (%)
@@ -76,6 +94,7 @@
 // 停转校准（手动模式）: 手摇停转持续该时长且来回数已达标 → 触发周期校准
 #define MANUAL_STOP_CALIB_MS      2000    // 停转持续时间 (ms)
 #define MANUAL_MIN_RPM            0.5f    // 视为停转的 RPM 阈值
+#define SPOOL_STOP_MS             1000    // 超过该时长无霍尔脉冲 → 判定料盘停转
 
 
 //============================================================================
@@ -153,6 +172,7 @@ struct DeviceConfig {
     float    traverseRightEnd;
     float    traverseDistPerRev;
     float    leadScrewPitch;
+    float    travelRangeMm;         // 左右限位之间的实际物理距离（位置换算/舵机标定基准）
     uint8_t  calIntervalRounds;
 
     // --- 舵机 ---
@@ -164,6 +184,14 @@ struct DeviceConfig {
     uint16_t servoPulseMax;
     float    servoTraverseSpeedRight;
     float    servoTraverseSpeedLeft;
+    float    servoSpeedExp;        // 速度幂律指数（标定自动写入）
+
+    // --- 排线编码器（可选 AS5600 闭环）---
+    uint8_t  traverseEncoder;      // 0=开环估算 1=AS5600 闭环
+    uint8_t  pinEncSda;
+    uint8_t  pinEncScl;
+    float    encGearRatio;         // 丝杆转速 / 编码器轴转速
+    float    encMmPerRev;          // 每编码器圈对应丝杆位移 mm（标定自动写入，0=按导程×齿比推算）
 
     // --- 电机 ---
     uint8_t  driveMode;           // 0=电动 1=手动(手摇)
@@ -208,6 +236,7 @@ struct DeviceConfig {
         c.traverseRightEnd      = TRAVERSE_RIGHT_END;
         c.traverseDistPerRev    = TRAVERSE_DIST_PER_REV;
         c.leadScrewPitch        = LEAD_SCREW_PITCH;
+        c.travelRangeMm         = TRAVEL_RANGE_MM;
         c.calIntervalRounds     = CAL_INTERVAL_ROUNDS;
 
         c.servoStopPulse        = SERVO_STOP_PULSE;
@@ -218,6 +247,13 @@ struct DeviceConfig {
         c.servoPulseMax         = SERVO_PULSE_MAX;
         c.servoTraverseSpeedRight = SERVO_TRAVERSE_SPEED_RIGHT;
         c.servoTraverseSpeedLeft  = SERVO_TRAVERSE_SPEED_LEFT;
+        c.servoSpeedExp           = SERVO_SPEED_EXP;
+
+        c.traverseEncoder         = TRAVERSE_ENCODER;
+        c.pinEncSda               = PIN_ENC_SDA;
+        c.pinEncScl               = PIN_ENC_SCL;
+        c.encGearRatio            = ENC_GEAR_RATIO;
+        c.encMmPerRev             = 0.0f;   // 0 = 未标定，按 leadScrewPitch × encGearRatio 推算
 
         c.driveMode            = DRIVE_MODE;
         c.motorMinSpeed         = MOTOR_MIN_SPEED;

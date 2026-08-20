@@ -20,6 +20,10 @@ public:
     // 按比例调速（0.0~1.0，用于 RPM 同步绕线）
     void setSpeedFraction(float frac);
 
+    // 连续有符号驱动（闭环速度控制用）: pct -100(满速左)~+100(满速右)，0=停止。
+    // 直接以停止脉宽为基准按比例偏移，同时维护方向状态供限位保护判断
+    void drive(int16_t pct);
+
     // 位置估算（在主循环中调用，dt 单位 ms）
     void updatePosition(uint32_t dtMs);
 
@@ -33,6 +37,8 @@ public:
     // 更新运行时参数（APP 修改后调用）
     void setPulses(uint16_t stop, uint16_t left, uint16_t right, uint16_t home);
     void setSpeeds(float leftMmS, float rightMmS);
+    void setSpeedExp(float k) { _speedExp = (k < 0.05f) ? 0.05f : (k > 3.0f ? 3.0f : k); }
+    float getSpeedExp() const { return _speedExp; }
 
 private:
     uint8_t    _pin        = 0;
@@ -51,6 +57,7 @@ private:
 
     float      _speedLeft  = 0;  // mm/s
     float      _speedRight = 0;  // mm/s
+    float      _speedExp   = 1.0f;  // 速度幂律指数: 实际速度 = 满速 × 比例^k
 
     TraverseDir _direction = DIR_NONE;
     float       _position  = 0;  // mm，相对于 Endstop 原点
