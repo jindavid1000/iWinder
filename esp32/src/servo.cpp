@@ -66,11 +66,26 @@ void ServoCtl::moveRight() { _direction = DIR_RIGHT; writeCurrentDirection(); }
 void ServoCtl::moveHome()  { _speedFraction = 1.0f; _direction = DIR_LEFT;  writeCurrentDirection(); }
 void ServoCtl::stop()      { _direction = DIR_NONE; _speedFraction = 1.0f; writePulse(_pulseStop); }
 
+void ServoCtl::drive(int16_t pct) {
+    if (pct < -100) pct = -100;
+    if (pct >  100) pct =  100;
+    if (pct == 0) {
+        _direction = DIR_NONE;
+        writePulse(_pulseStop);
+        return;
+    }
+    _direction = (pct > 0) ? DIR_RIGHT : DIR_LEFT;
+    _speedFraction = fabsf(pct) / 100.0f;
+    writeCurrentDirection();
+}
+
 void ServoCtl::updatePosition(uint32_t dtMs) {
     if (_direction == DIR_NONE) return;
     float speed = (_direction == DIR_LEFT) ? _speedLeft : _speedRight;
     if (speed <= 0) return;
-    float delta = speed * _speedFraction * (dtMs / 1000.0f);
+    // 幂律速度模型: 舵机速度与脉宽偏移不成正比（低速段偏快），
+    // 标定测得的指数 k 修正估算
+    float delta = speed * powf(_speedFraction, _speedExp) * (dtMs / 1000.0f);
     if (_direction == DIR_LEFT) {
         _position -= delta;
         if (_position < 0) _position = 0;
