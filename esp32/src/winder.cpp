@@ -79,10 +79,11 @@ void Winder::setError(ErrorCode code, const String &msg) {
 void Winder::startTask(int speedPct) {
     if (g_state.state == STATE_ERROR) return;
 
-    // 前置检查: 排线位置估算依赖舵机标定速度，未标定时定位/绕线会
-    // 陷入"顶限位"死循环，直接拒绝启动
-    if (g_config.servoTraverseSpeedLeft < 0.1f || g_config.servoTraverseSpeedRight < 0.1f) {
-        setError(ERR_SENSOR, "舵机速度未标定，请先在 App 参数页执行「舵机速度标定」");
+    // 前置检查: 开环估算模式必须有舵机标定速度；编码器闭环模式下
+    // 位置/速度均来自编码器实测，舵机标定不再必需
+    if (!encMode() &&
+        (g_config.servoTraverseSpeedLeft < 0.1f || g_config.servoTraverseSpeedRight < 0.1f)) {
+        setError(ERR_SENSOR, "舵机速度未标定，请先在 App 参数页执行「舵机速度标定」或启用编码器闭环");
         return;
     }
 
@@ -698,9 +699,11 @@ void Winder::processTraverse(uint32_t dtMs) {
             // 位置精度始终由编码器保证。开环估算模式走下方的迟滞步进。
             TraverseDir wantDir = (err > 0) ? DIR_RIGHT : DIR_LEFT;
             _travDir = wantDir;
+            // 速度上限: 标定值（可用则用）；编码器模式下未标定用宽松默认值。
+            // 此值仅限制追逐误差的最大速度，不影响定位精度。
             float full = (wantDir == DIR_LEFT) ? g_config.servoTraverseSpeedLeft
                                                : g_config.servoTraverseSpeedRight;
-            if (full < 0.1f) full = 1.0f;
+            if (full < 0.1f) full = 80.0f;
 
             float vTarget = 0;
             if (fabs(err) > 0.15f) {
