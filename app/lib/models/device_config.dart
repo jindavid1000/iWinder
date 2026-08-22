@@ -39,7 +39,6 @@ class DeviceConfig {
   int servoPulseMax;
   double servoTraverseSpeedRight;
   double servoTraverseSpeedLeft;
-  double servoSpeedExp; // 速度幂律指数（标定自动写入，1.0=线性）
 
   // 排线编码器（可选 AS5600 闭环）
   int traverseEncoder; // 0=舵机开环估算 1=AS5600 闭环
@@ -94,11 +93,10 @@ class DeviceConfig {
     this.servoPulseMax = 2500,
     this.servoTraverseSpeedRight = 0.0,
     this.servoTraverseSpeedLeft = 0.0,
-    this.servoSpeedExp = 1.0,
     this.traverseEncoder = 0,
     this.pinEncSda = 21,
     this.pinEncScl = 22,
-    this.encGearRatio = 3.0,
+    this.encGearRatio = 1.0,
     this.encMmPerRev = 0.0,
     this.driveMode = 0,
     this.motorMinSpeed = 20,
@@ -144,11 +142,10 @@ class DeviceConfig {
     c.servoPulseMax = _i(m, 'servoPulseMax', 2500);
     c.servoTraverseSpeedRight = _d(m, 'servoTraverseSpeedRight', 0.0);
     c.servoTraverseSpeedLeft = _d(m, 'servoTraverseSpeedLeft', 0.0);
-    c.servoSpeedExp = _d(m, 'servoSpeedExp', 1.0);
     c.traverseEncoder = _i(m, 'traverseEncoder', 0);
     c.pinEncSda = _i(m, 'pinEncSda', 21);
     c.pinEncScl = _i(m, 'pinEncScl', 22);
-    c.encGearRatio = _d(m, 'encGearRatio', 3.0);
+    c.encGearRatio = _d(m, 'encGearRatio', 1.0);
     c.encMmPerRev = _d(m, 'encMmPerRev', 0.0);
     c.driveMode = _i(m, 'driveMode', 0);
     c.motorMinSpeed = _i(m, 'motorMinSpeed', 20);
@@ -194,7 +191,6 @@ class DeviceConfig {
     'servoPulseMax': servoPulseMax,
     'servoTraverseSpeedRight': servoTraverseSpeedRight,
     'servoTraverseSpeedLeft': servoTraverseSpeedLeft,
-    'servoSpeedExp': servoSpeedExp,
     'traverseEncoder': traverseEncoder,
     'pinEncSda': pinEncSda,
     'pinEncScl': pinEncScl,

@@ -51,7 +51,6 @@ bool setConfigValue(DeviceConfig &c, const String &key, float value) {
     if (key == "servoPulseMax")       { c.servoPulseMax = (uint16_t)value;        return true; }
     if (key == "servoTraverseSpeedRight") { c.servoTraverseSpeedRight = value;    return true; }
     if (key == "servoTraverseSpeedLeft")  { c.servoTraverseSpeedLeft = value;     return true; }
-    if (key == "servoSpeedExp")           { c.servoSpeedExp = value;              return true; }
 
     // 排线编码器
     if (key == "traverseEncoder")        { c.traverseEncoder = (uint8_t)value;   return true; }
@@ -112,7 +111,6 @@ String getConfigJson(const DeviceConfig &c) {
     doc["servoPulseMax"]            = c.servoPulseMax;
     doc["servoTraverseSpeedRight"]  = c.servoTraverseSpeedRight;
     doc["servoTraverseSpeedLeft"]   = c.servoTraverseSpeedLeft;
-    doc["servoSpeedExp"]            = c.servoSpeedExp;
     doc["traverseEncoder"]          = c.traverseEncoder;
     doc["pinEncSda"]                = c.pinEncSda;
     doc["pinEncScl"]                = c.pinEncScl;

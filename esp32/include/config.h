@@ -57,14 +57,8 @@
 #define SERVO_PWM_FREQ            50      // PWM 频率 (Hz)
 #define SERVO_PULSE_MIN           500     // 满速左行极限 (us)
 #define SERVO_PULSE_MAX           2500    // 满速右行极限 (us)
-#define SERVO_SPEED_EXP           1.0f    // 舵机速度幂律指数 k（速度=满速×比例^k）。
-                                          // 标定时自动测量，1.0=线性；舵机低速偏快则 k<1
 #define SERVO_RES_BITS            14      // LEDC 分辨率位数
-#define SERVO_MIN_FRAC            0.30f   // 可靠起动的最小速度比例。
-                                          // 不能太低: 低速切片的脉宽偏移太小，会被电机 PWM
-                                          // 耦合进舵机线的噪声偏置反超，导致低速方向反转
-#define SERVO_BURST_MS            40      // 切片单次运动时长 (ms)，须大于舵机机电响应时间(~20ms)。
-                                          // 更慢的平均速度靠拉长运动间隔实现，而非缩短单次运动
+#define SERVO_MIN_FRAC            0.30f   // 开环兜底模式的固定步进偏移比例（绕线主路径为编码器闭环）
 
 // 排线位置反馈: 0=开环估算(默认) 1=AS5600 磁编码器闭环
 // 编码器直测丝杆（推荐）→ 齿比 1.0，mm/圈 = 丝杆导程
@@ -184,7 +178,6 @@ struct DeviceConfig {
     uint16_t servoPulseMax;
     float    servoTraverseSpeedRight;
     float    servoTraverseSpeedLeft;
-    float    servoSpeedExp;        // 速度幂律指数（标定自动写入）
 
     // --- 排线编码器（可选 AS5600 闭环）---
     uint8_t  traverseEncoder;      // 0=开环估算 1=AS5600 闭环
@@ -247,7 +240,6 @@ struct DeviceConfig {
         c.servoPulseMax         = SERVO_PULSE_MAX;
         c.servoTraverseSpeedRight = SERVO_TRAVERSE_SPEED_RIGHT;
         c.servoTraverseSpeedLeft  = SERVO_TRAVERSE_SPEED_LEFT;
-        c.servoSpeedExp           = SERVO_SPEED_EXP;
 
         c.traverseEncoder         = TRAVERSE_ENCODER;
         c.pinEncSda               = PIN_ENC_SDA;
