@@ -37,8 +37,6 @@ public:
     // 更新运行时参数（APP 修改后调用）
     void setPulses(uint16_t stop, uint16_t left, uint16_t right, uint16_t home);
     void setSpeeds(float leftMmS, float rightMmS);
-    void setSpeedExp(float k) { _speedExp = (k < 0.05f) ? 0.05f : (k > 3.0f ? 3.0f : k); }
-    float getSpeedExp() const { return _speedExp; }
 
 private:
     uint8_t    _pin        = 0;
@@ -57,7 +55,6 @@ private:
 
     float      _speedLeft  = 0;  // mm/s
     float      _speedRight = 0;  // mm/s
-    float      _speedExp   = 1.0f;  // 速度幂律指数: 实际速度 = 满速 × 比例^k
 
     TraverseDir _direction = DIR_NONE;
     float       _position  = 0;  // mm，相对于 Endstop 原点

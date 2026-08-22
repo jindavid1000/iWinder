@@ -47,8 +47,8 @@ static bool ok = false;
 static uint8_t phase = 2;
 static uint32_t phaseStartMs = 0;
 
-static float revsAtLastLeft = 0;    // 上次到左限位时的圈数
-static bool   leftSeen = false;
+static float revsAtRight = 0;      // 右限位停稳后的圈数（比例标定基准）
+static bool   rightSeen = false;
 
 void setup() {
     Serial.begin(115200);
@@ -96,21 +96,18 @@ void loop() {
             if (endR || now - phaseStartMs > 4000) { servoPulse(PULSE_STOP); phase = 1; phaseStartMs = now; }
             else servoPulse(PULSE_RIGHT);
             break;
-        case 1:  // 停
-            if (now - phaseStartMs > 800) { phase = 2; phaseStartMs = now; }
+        case 1:  // 停（右限位停稳后记录基准圈数）
+            if (now - phaseStartMs > 800) {
+                revsAtRight = totalCounts / 4096.0f;   // 停稳后记录，避开撞限位回弹
+                rightSeen = true;
+                phase = 2; phaseStartMs = now;
+            }
             break;
         case 2:  // 左行
             if (endL || now - phaseStartMs > 4000) {
                 servoPulse(PULSE_STOP);
                 phase = 3;
                 phaseStartMs = now;
-                if (leftSeen) {
-                    float revs = totalCounts / 4096.0f - revsAtLastLeft;
-                    Serial.printf(">> 本次左限位到右限位: %.3f 圈 × %.1fmm = %.1fmm (对比限位间距设定值)\n",
-                                  fabsf(revs), MM_PER_REV, fabsf(revs) * MM_PER_REV);
-                }
-                revsAtLastLeft = totalCounts / 4096.0f;
-                leftSeen = true;
             }
             else servoPulse(PULSE_LEFT);
             break;
@@ -130,6 +127,14 @@ void loop() {
         lastPrintMs = now;
         const char *ph = (phase == 0) ? "右行" : (phase == 1) ? "停止"
                         : (phase == 2) ? "左行" : "停止";
+        // 左限位停稳(进入阶段3)时打印: 右停稳 → 左触发 的真实行程
+        static uint8_t lastPhase = 3;
+        if (phase == 3 && lastPhase == 2 && rightSeen) {
+            float revs = fabsf(totalCounts / 4096.0f - revsAtRight);
+            Serial.printf(">> 右停稳→左触发: %.3f 圈 × %.1fmm = %.1fmm（填入「限位间距」）\n",
+                          revs, MM_PER_REV, revs * MM_PER_REV);
+        }
+        lastPhase = phase;
         Serial.printf("[ENC] %s %-4s raw=%4u 圈数=%8.3f 位置=%8.2fmm 速度=%7.2fmm/s%s%s\n",
                       ok ? "OK" : "!!", ph, lastRaw,
                       totalCounts / 4096.0f, mm, speed,

@@ -107,13 +107,6 @@ class SettingsScreen extends StatelessWidget {
                 onChanged: (v) => model.config.servoTraverseSpeedRight = v),
             _NumField(label: '左行速度 (mm/s)', value: model.config.servoTraverseSpeedLeft,
                 onChanged: (v) => model.config.servoTraverseSpeedLeft = v),
-            _NumField(label: '速度指数 k', value: model.config.servoSpeedExp,
-                onChanged: (v) => model.config.servoSpeedExp = v),
-            const Text(
-              'k 由舵机速度标定自动测量（速度 = 满速 × 比例^k）。'
-              'k=1 线性；舵机低速偏快时 k<1。一般无需手改。',
-              style: TextStyle(fontSize: 12, color: Colors.grey, height: 1.5),
-            ),
           ]),
           Card(
             child: Padding(

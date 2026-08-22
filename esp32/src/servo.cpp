@@ -83,9 +83,7 @@ void ServoCtl::updatePosition(uint32_t dtMs) {
     if (_direction == DIR_NONE) return;
     float speed = (_direction == DIR_LEFT) ? _speedLeft : _speedRight;
     if (speed <= 0) return;
-    // 幂律速度模型: 舵机速度与脉宽偏移不成正比（低速段偏快），
-    // 标定测得的指数 k 修正估算
-    float delta = speed * powf(_speedFraction, _speedExp) * (dtMs / 1000.0f);
+    float delta = speed * _speedFraction * (dtMs / 1000.0f);
     if (_direction == DIR_LEFT) {
         _position -= delta;
         if (_position < 0) _position = 0;
