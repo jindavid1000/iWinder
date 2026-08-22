@@ -10,7 +10,7 @@
 //============================================================================
 //  4.2  引脚配置
 //============================================================================
-#define PIN_MOTOR_PWM         4       // 收线盘电机 MOS 管 PWM（IRLB8721 栅极，经 150Ω 电阻）
+#define PIN_MOTOR_PWM         4       // 电机驱动（MOS 栅极 或 L298N IN1，由 motorDriver 配置决定）
 #define PIN_SERVO_PWM         5       // 排线舵机 PWM
 #define PIN_ENDSTOP           14       // Endstop 左限位信号
 #define PIN_ENDSTOP_RIGHT     32       // Endstop 右限位信号
@@ -31,7 +31,7 @@
 //  4.4  料盘参数 — 拓竹 1kg 默认
 //============================================================================
 #define SPOOL_OUTER_DIAMETER          200.0f  // 料盘外径 (mm)
-#define SPOOL_WIDTH                   68.0f   // 料盘绕线区宽度 (mm)
+#define SPOOL_WIDTH                   60.0f   // 料盘绕线区宽度 (mm，拓竹规格)
 #define SPOOL_CORE_DIA_WITH_CARD      87.0f   // 有纸筒芯轴直径 (mm)
 #define SPOOL_CORE_DIA_NO_CARD        81.5f   // 无纸筒芯轴直径 (mm)
 #define FILAMENT_DIAMETER             1.75f   // 线径 (mm)

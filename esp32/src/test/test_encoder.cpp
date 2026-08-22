@@ -220,7 +220,9 @@ void loop() {
         static uint8_t lastPhase = 3;
         if (phase == 3 && lastPhase == 2 && rightSeen) {
             float revs = fabsf(totalCounts / 4096.0f - revsAtRight);
-            Serial.printf(">> 右停稳→左触发: %.3f 圈 × %.1fmm = %.1fmm（填入「限位间距」）\n",
+            Serial.printf(">> 右停稳→左触发: %.3f 圈 × %.1fmm = %.1fmm"
+                          "（⚠️ 含停稳回弹约 5mm，比真实触发间距偏大，"
+                          "最准以定位日志: 右锚定坐标−左触发坐标 为准）\n",
                           revs, MM_PER_REV, revs * MM_PER_REV);
         }
         lastPhase = phase;
