@@ -40,11 +40,13 @@
 //  4.5  运动参数
 //============================================================================
 #define TRAVERSE_LEFT_START       12.0f   // 绕线左起始位置 (mm，安装偏右，避开左限位)
-#define TRAVERSE_RIGHT_END        80.0f   // 绕线右终止换向位置 (mm)
+#define TRAVERSE_RIGHT_END        62.0f   // 绕线右终止换向位置 (mm，距右限位留 2mm 余量)
 #define TRAVERSE_DIST_PER_REV     1.75f   // 料盘每转一圈排线移动距离 (mm)
 #define LEAD_SCREW_PITCH          22.0f   // 丝杆导程 (mm/圈, T8 四头)
 #define CAL_INTERVAL_ROUNDS       3       // 每 N 个来回校准一次
-#define TRAVEL_RANGE_MM           80.0f   // 左右限位之间的实际物理距离 (mm，用于舵机标定)
+#define TRAVEL_RANGE_MM           64.0f   // 左右限位之间的实际物理距离 (mm)。
+                                          // ※ 实测值: test_encoder 固件"右停稳→左触发"
+                                          //   2.92圈 × 22mm = 64.3mm，重复性 ±0.1mm。
 
 //============================================================================
 //  4.6  舵机参数 — 鑫辉科技 18KG 数字舵机 (连续旋转)
@@ -60,9 +62,9 @@
 #define SERVO_RES_BITS            14      // LEDC 分辨率位数
 #define SERVO_MIN_FRAC            0.30f   // 开环兜底模式的固定步进偏移比例（绕线主路径为编码器闭环）
 
-// 排线位置反馈: 0=开环估算(默认) 1=AS5600 磁编码器闭环
-// 编码器直测丝杆（推荐）→ 齿比 1.0，mm/圈 = 丝杆导程
-#define TRAVERSE_ENCODER          0
+// 排线位置反馈: 0=开环估算 1=AS5600 磁编码器闭环（默认，实测重复性 ±0.1mm）
+// 编码器直测丝杆 → 齿比 1.0，mm/圈 = 丝杆导程
+#define TRAVERSE_ENCODER          1
 #define ENC_GEAR_RATIO            1.0f
 #define SERVO_TRAVERSE_SPEED_RIGHT  0.0f  // 右行线速度 (mm/s, 0=未标定)
 #define SERVO_TRAVERSE_SPEED_LEFT   0.0f  // 左行线速度 (mm/s, 0=未标定)
