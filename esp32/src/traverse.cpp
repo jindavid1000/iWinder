@@ -16,8 +16,10 @@ bool TraverseCtl::encoderMode() {
 }
 
 float TraverseCtl::pos() {
-    return (encoderMode() && g_encoder.ok()) ? g_encoder.posMm()
-                                             : g_servo.getPosition();
+    // 编码器模式下始终用编码器: 瞬时 I2C 读错时计数只是暂停（冻结在最后
+    // 已知位置），切到未标定的舵机估算反而会注入假位移导致乱冲
+    if (encoderMode()) return g_encoder.posMm();
+    return g_servo.getPosition();
 }
 
 void TraverseCtl::setPos(float p) {
@@ -37,7 +39,7 @@ void TraverseCtl::beginWinding() {
     g_state.roundTrips = 0;
     _windGraceUntilMs = millis() + 10000;   // 定位收敛宽限
     _staticSinceMs = 0;
-    _piInteg = 0;
+    _trackMag = 12;
 }
 
 void TraverseCtl::stop() {
@@ -58,7 +60,7 @@ void TraverseCtl::restoreAfterCalib() {
     if (_windTargetPos < L) _windTargetPos = L;
     _windGraceUntilMs = millis() + 15000;  // 从限位返回原位置的宽限
     _travDir = _windDirRight ? DIR_RIGHT : DIR_LEFT;
-    _piInteg = 0;
+    _trackMag = 12;
 }
 
 // ============================================================================
@@ -159,7 +161,8 @@ void TraverseCtl::update(uint32_t now) {
         // 已到位: 暂停等待目标推进（料盘慢/停时排线也停，位置不漂移）
         stop();
         // 静止时仍顶限位 → 舵机中位偏移（停止脉宽下仍在缓慢转动）
-        if (g_sensors.isLeftEndstopPressed() || g_sensors.isRightEndstopPressed()) {
+        if ((g_sensors.isLeftEndstopPressed() || g_sensors.isRightEndstopPressed())
+            && now > _windGraceUntilMs) {   // 刚锚定/折返后顶限位属正常，不误报
             if (_stillPressMs == 0) _stillPressMs = now;
             else if (now - _stillPressMs > 2000) {
                 stop();
@@ -177,51 +180,53 @@ void TraverseCtl::update(uint32_t now) {
     _travDir = wantDir;
 
     if (encoderMode() && g_encoder.ok()) {
-        // ===== 编码器闭环: PI 速度控制 =====
-        // 目标速度 = 圈数前馈(转速×线径) + 位置误差修正；实测速度来自编码器。
-        float full = (wantDir == DIR_LEFT) ? g_config.servoTraverseSpeedLeft
-                                           : g_config.servoTraverseSpeedRight;
-        if (full < 0.1f) full = 80.0f;
-
-        float vTarget = 0;
-        if (fabsf(err) > 0.15f) {
-            float ff = (g_state.spoolRpm / 60.0f) * g_config.filamentDiameter;
-            vTarget = ff + fabsf(err) * 1.5f;
-            if (vTarget > full) vTarget = full;
-            if (wantDir == DIR_LEFT) vTarget = -vTarget;
-        }
-
-        // 40ms 零阶保持 + 斜率限制: 舵机是开关型对象（30% 偏移≈满速），
-        // 无保持的 PI 会在目标低速时输出高频翻转（±70% 抖动）→ 舵机电流
-        // 剧烈斩波 → EMI 打到限位线产生假触发。限速后输出必经 0 再换向。
-        if (now - _piLastMs < 40) {
-            g_servo.drive((int16_t)_piLastOut);   // 保持上一输出
-        } else {
-            float dt = (now - _piLastMs) / 1000.0f;
-            if (dt > 0.2f) dt = 0.2f;
+        // ===== 编码器闭环: 连续旋转 + 速度自适应匹配 =====
+        // 舵机持续旋转（平滑），每 40ms 结算一次:
+        //   应走速度 = 圈数前馈 + 误差回收（限幅）
+        //   实测速度 = 编码器速度
+        // 两者差多少，驱动幅度就微调多少——自动收敛到"刚好跟上目标"
+        // 的持续转速。另带预判滑行刹车: 误差小于滑行距离就断驱动，
+        // 让惯性把最后一段滑完，不冲过头。
+        if (now - _piLastMs >= 40) {
             _piLastMs = now;
 
-            float vMeas = g_encoder.getSpeedMmPerS();
-            float vErr = vTarget - vMeas;
-            _piInteg += vErr * dt * 2.5f;
-            if (_piInteg >  25.0f) _piInteg =  25.0f;
-            if (_piInteg < -25.0f) _piInteg = -25.0f;
-            // 抗饱和: 实测速度已超目标时泄放积分
-            if (fabsf(vMeas) > fabsf(vTarget) + 2.0f) _piInteg *= 0.8f;
-            if (vTarget == 0 && fabsf(err) < 0.3f) _piInteg = 0;
+            float vMeas = g_encoder.getSpeedMmPerS();   // 实测速度（右正）
+            bool coast = (fabsf(err) > 0.15f &&
+                          fabsf(err) < fabsf(vMeas) * 0.15f + 0.5f);
 
-            float out = vErr * 3.0f + _piInteg;
-            if (out >  70.0f) out =  70.0f;
-            if (out < -70.0f) out = -70.0f;
-            if (fabsf(vTarget) < 0.05f && fabsf(err) < 0.3f) out = 0;
-            if (fabsf(out) < 5.0f && out != 0) out = 0;   // 输出死区
+            if (coast) {
+                // 预判滑行刹车: 断驱后 ~0.15s 才真正停 → 滑行 ≈ v×0.15。
+                // 误差小于滑行距离+0.5mm 时断驱，滑行恰好吃掉剩余误差
+                g_servo.drive(0);
+                _trackMag = 12;
+            } else {
+                float ff = (g_state.spoolRpm / 60.0f) * g_config.filamentDiameter;
+                float windDir = _windDirRight ? 1.0f : -1.0f;
+                float e = err;                    // 误差回收，限 ±5mm/s
+                if (e >  5.0f) e =  5.0f;
+                if (e < -5.0f) e = -5.0f;
+                float desired = ff * windDir + e * 1.2f;
 
-            // 斜率限制: 每个控制周期最多变化 ±30%（换向必经 0，消除电流斩波）
-            if (out > _piLastOut + 30.0f) out = _piLastOut + 30.0f;
-            if (out < _piLastOut - 30.0f) out = _piLastOut - 30.0f;
-            _piLastOut = out;
+                // 绕线方向禁倒车（小误差时）: 反向要穿丝杆回差，且表现为
+                // "走回头路"。超前就停等目标，误差 >2.5mm 才允许真倒车。
+                if (fabsf(err) < 2.5f && desired * windDir < 0) desired = 0;
 
-            g_servo.drive((int16_t)out);
+                if (fabsf(desired) < 0.3f) {
+                    g_servo.drive(0);             // 无需求: 停
+                    _trackMag = 12;               // 幅度重置回中
+                } else {
+                    int16_t dir = (desired > 0) ? 1 : -1;
+                    float vAlong = vMeas * dir;   // 实速在目标方向的分量
+                    float vErr = fabsf(desired) - vAlong;
+                    int16_t step = (int16_t)(vErr * 2.0f);        // 速度差 → 幅度微调
+                    if (step >  5) step =  5;
+                    if (step < -5) step = -5;
+                    _trackMag += step;
+                    if (_trackMag < 6)  _trackMag = 6;  // 死区内由自适应往上爬
+                    if (_trackMag > 30) _trackMag = 30;
+                    g_servo.drive(dir * _trackMag);
+                }
+            }
         }
     } else {
         // ===== 开环估算兜底: 迟滞步进 =====
@@ -243,33 +248,53 @@ void TraverseCtl::update(uint32_t now) {
 // ============================================================================
 
 void TraverseCtl::endstopSafety(uint32_t now) {
-    if (g_servo.getDirection() == DIR_RIGHT && rightEndstopStable(now)) {
-        // 位置合理性: 右限位锚定只在排线确实接近右端时接受，
-        // 中途位置出现"限位"必为干扰，忽略并记录
-        static uint32_t lastIgnR = 0;
-        if (pos() < g_config.travelRangeMm - 3.0f) {
+    // 用"意图方向"而非舵机实际方向判断: PI 死区停车时舵机方向为 NONE，
+    // 但目标仍在往右推（顶在限位上），此时也必须处理限位。
+    bool pushRight = (g_servo.getDirection() == DIR_RIGHT ||
+                      (g_servo.getDirection() == DIR_NONE && _travDir == DIR_RIGHT));
+    bool pushLeft  = (g_servo.getDirection() == DIR_LEFT ||
+                      (g_servo.getDirection() == DIR_NONE && _travDir == DIR_LEFT));
+
+    if (pushRight && rightEndstopStable(now)) {
+        // 位置合理性: 右限位锚定优先在排线确实接近右端时接受。
+        // 但若限位被持续压住 ≥500ms（EMI 假脉冲不可能持续），
+        // 即使坐标不符也必须接受——否则编码器漂移/参数偏差会让
+        // 排线顶死在限位上被永久忽略（目标一直推右、永不换向）。
+        uint32_t heldMs = now - _rightLowSinceMs;
+        if (pos() < g_config.travelRangeMm - 3.0f && heldMs < 500) {
+            static uint32_t lastIgnR = 0;
             if (now - lastIgnR > 1000) {   // 限流: 持续误压时每秒只提示一次
                 lastIgnR = now;
-                Serial.printf("[Winder] 持续忽略右限位信号（排线 %.1fmm 处被压/线路异常）\n", pos());
+                Serial.printf("[Winder] 忽略右限位瞬态（排线 %.1fmm 处，疑干扰）\n", pos());
             }
             return;
         }
         g_servo.stop();
+        float drift = g_config.travelRangeMm - pos();
+        if (drift > 3.0f) {
+            Serial.printf("[Winder] 警告: 右限位触发时坐标偏差 %.1fmm，"
+                          "请核查 travelRangeMm 实测值与编码器 mm/圈 标定\n", drift);
+        }
         setPos(g_config.travelRangeMm);
         _windDirRight = false;
         if (_windTargetPos > g_config.traverseRightEnd) _windTargetPos = g_config.traverseRightEnd;
         _windGraceUntilMs = now + 10000;   // 位置校正后长距离回退的宽限
         Serial.printf("[Winder] 右限位触发换向 pos=%.1f\n", pos());
-    } else if (g_servo.getDirection() == DIR_LEFT && leftEndstopStable(now)) {
-        static uint32_t lastIgnL = 0;
-        if (pos() > 3.0f) {
+    } else if (pushLeft && leftEndstopStable(now)) {
+        uint32_t heldMs = now - _leftLowSinceMs;
+        if (pos() > 3.0f && heldMs < 500) {
+            static uint32_t lastIgnL = 0;
             if (now - lastIgnL > 1000) {
                 lastIgnL = now;
-                Serial.printf("[Winder] 持续忽略左限位信号（排线 %.1fmm 处被压/线路异常）\n", pos());
+                Serial.printf("[Winder] 忽略左限位瞬态（排线 %.1fmm 处，疑干扰）\n", pos());
             }
             return;
         }
         g_servo.stop();
+        if (pos() < -3.0f) {
+            Serial.printf("[Winder] 警告: 左限位触发时坐标偏差 %.1fmm，"
+                          "请核查 travelRangeMm 实测值与编码器 mm/圈 标定\n", pos());
+        }
         setPos(0);
         _windDirRight = true;
         if (_windTargetPos < g_config.traverseLeftStart) _windTargetPos = g_config.traverseLeftStart;

@@ -50,6 +50,7 @@ private:
     uint16_t _lastRaw  = 0;
     float    _mmPerCount = 0.016f;     // mm / count（默认 66mm/4096）
     int8_t   _sign      = 1;           // 方向符号（寻原点自动学习）
+    uint8_t  _sda = 0, _scl = 0;       // 引脚（总线恢复用）
 
     // 诊断
     volatile uint16_t _unwrapCorr = 0;

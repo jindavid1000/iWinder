@@ -74,16 +74,16 @@ class DeviceConfig {
     this.hallDebounceUs = 25000,
     this.endstopDebounceUs = 20000,
     this.spoolOuterDiameter = 200.0,
-    this.spoolWidth = 68.0,
+    this.spoolWidth = 60.0,
     this.spoolCoreDiaWithCard = 87.0,
     this.spoolCoreDiaNoCard = 81.5,
     this.spoolHasCardboard = true,
     this.filamentDiameter = 1.75,
     this.traverseLeftStart = 12.0,
-    this.traverseRightEnd = 80.0,
+    this.traverseRightEnd = 62.0,
     this.traverseDistPerRev = 1.75,
     this.leadScrewPitch = 22.0,
-    this.travelRangeMm = 80.0,
+    this.travelRangeMm = 64.0,
     this.calIntervalRounds = 3,
     this.servoStopPulse = 1500,
     this.servoLeftPulse = 500,
@@ -93,7 +93,7 @@ class DeviceConfig {
     this.servoPulseMax = 2500,
     this.servoTraverseSpeedRight = 0.0,
     this.servoTraverseSpeedLeft = 0.0,
-    this.traverseEncoder = 0,
+    this.traverseEncoder = 1,
     this.pinEncSda = 21,
     this.pinEncScl = 22,
     this.encGearRatio = 1.0,
@@ -123,16 +123,16 @@ class DeviceConfig {
     c.hallDebounceUs = _i(m, 'hallDebounceUs', 25000);
     c.endstopDebounceUs = _i(m, 'endstopDebounceUs', 20000);
     c.spoolOuterDiameter = _d(m, 'spoolOuterDiameter', 200.0);
-    c.spoolWidth = _d(m, 'spoolWidth', 68.0);
+    c.spoolWidth = _d(m, 'spoolWidth', 60.0);
     c.spoolCoreDiaWithCard = _d(m, 'spoolCoreDiaWithCard', 87.0);
     c.spoolCoreDiaNoCard = _d(m, 'spoolCoreDiaNoCard', 81.5);
     c.spoolHasCardboard = _i(m, 'spoolHasCardboard', 1) != 0;
     c.filamentDiameter = _d(m, 'filamentDiameter', 1.75);
     c.traverseLeftStart = _d(m, 'traverseLeftStart', 12.0);
-    c.traverseRightEnd = _d(m, 'traverseRightEnd', 80.0);
+    c.traverseRightEnd = _d(m, 'traverseRightEnd', 62.0);
     c.traverseDistPerRev = _d(m, 'traverseDistPerRev', 1.75);
     c.leadScrewPitch = _d(m, 'leadScrewPitch', 22.0);
-    c.travelRangeMm = _d(m, 'travelRangeMm', 80.0);
+    c.travelRangeMm = _d(m, 'travelRangeMm', 64.0);
     c.calIntervalRounds = _i(m, 'calIntervalRounds', 3);
     c.servoStopPulse = _i(m, 'servoStopPulse', 1500);
     c.servoLeftPulse = _i(m, 'servoLeftPulse', 500);
@@ -142,7 +142,7 @@ class DeviceConfig {
     c.servoPulseMax = _i(m, 'servoPulseMax', 2500);
     c.servoTraverseSpeedRight = _d(m, 'servoTraverseSpeedRight', 0.0);
     c.servoTraverseSpeedLeft = _d(m, 'servoTraverseSpeedLeft', 0.0);
-    c.traverseEncoder = _i(m, 'traverseEncoder', 0);
+    c.traverseEncoder = _i(m, 'traverseEncoder', 1);
     c.pinEncSda = _i(m, 'pinEncSda', 21);
     c.pinEncScl = _i(m, 'pinEncScl', 22);
     c.encGearRatio = _d(m, 'encGearRatio', 1.0);

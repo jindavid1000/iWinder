@@ -51,10 +51,9 @@ private:
     // 方向记忆与开环步进
     TraverseDir _travDir = DIR_RIGHT;
 
-    // 编码器 PI 速度闭环
-    float    _piInteg  = 0;
-    uint32_t _piLastMs = 0;
-    float    _piLastOut = 0;    // 上一周期输出（零阶保持 + 斜率限制）
+    // 编码器连续旋转速度自适应闭环
+    uint32_t _piLastMs  = 0;    // 上一调整时刻（100ms 周期）
+    int16_t  _trackMag  = 12;   // 当前驱动幅度（速度差微调收敛）
 
     // 限位消抖（连续两个控制拍都为低才认）
     uint32_t _leftLowSinceMs  = 0;

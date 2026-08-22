@@ -29,6 +29,34 @@ void Storage::loadConfig(DeviceConfig &cfg) {
     size_t len = prefs.getBytesLength(K_CFG);
     if (len == sizeof(DeviceConfig)) {
         prefs.getBytes(K_CFG, &cfg, sizeof(DeviceConfig));
+        // 一次性迁移: 默认改为 AS5600 编码器闭环（2026-08，本机已装编码器且实测可靠）
+        if (!prefs.getBool("encDef1", false)) {
+            prefs.putBool("encDef1", true);
+            if (cfg.traverseEncoder == 0) {
+                cfg.traverseEncoder = 1;
+                prefs.end();
+                saveConfig(cfg);
+                Serial.println("[Storage] 已迁移: 默认位置反馈 → AS5600 编码器闭环");
+                return;
+            }
+        }
+        // 迁移: 行程参数修正（2026-08，test_encoder 实测限位间距 64.3mm，原 80 为估计值）
+        if (cfg.travelRangeMm == 80.0f && cfg.traverseRightEnd == 80.0f) {
+            cfg.travelRangeMm    = 64.0f;
+            cfg.traverseRightEnd = 62.0f;
+            prefs.end();
+            saveConfig(cfg);
+            Serial.println("[Storage] 已迁移行程参数: 限位间距 80→64mm，右换向 80→62mm");
+            return;
+        }
+        if (cfg.travelRangeMm == 70.0f && cfg.traverseRightEnd == 68.0f) {
+            cfg.travelRangeMm    = 64.0f;
+            cfg.traverseRightEnd = 62.0f;
+            prefs.end();
+            saveConfig(cfg);
+            Serial.println("[Storage] 已迁移行程参数: 限位间距 70→64mm，右换向 68→62mm");
+            return;
+        }
         // 迁移: 左右限位引脚对调（2026-08 接线修正）
         if (cfg.pinEndstop == 14 && cfg.pinEndstopRight == 32) {
             cfg.pinEndstop = 32;

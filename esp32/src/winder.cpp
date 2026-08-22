@@ -260,10 +260,14 @@ void Winder::doHoming() {
             // 而非停稳点（柔性行程回弹量随撞击速度漂移 2~8mm）。
             float dRevs = g_encoder.getRevs() - _encRevsAtHomeStart;
             if (fabsf(dRevs) > 0.5f) {
-                int8_t s = (dRevs > 0) ? 1 : -1;
-                if (s != g_encoder.getSign()) {
-                    g_encoder.setSign(s);
-                    Serial.printf("[Winder] 编码器方向自学习: 符号=%d\n", s);
+                // getRevs 带旧符号，真实原始计数方向 = dRevs × 旧符号。
+                // 寻原点为右行，要求"右行 → 位置增大"：
+                // 新符号 = 旧符号 × sign(dRevs)。（直接取 sign(dRevs) 在旧符号
+                // 为 -1 时会把正确的符号再翻反）
+                int8_t ns = g_encoder.getSign() * ((dRevs > 0) ? 1 : -1);
+                if (ns != g_encoder.getSign()) {
+                    g_encoder.setSign(ns);
+                    Serial.printf("[Winder] 编码器方向自学习: 符号=%d\n", ns);
                 }
             }
             TraverseCtl::setPos(g_config.travelRangeMm);
@@ -340,7 +344,48 @@ void Winder::doPositioning() {
     }
 
     pos = TraverseCtl::pos();
-    if (pos >= target - 0.5f && pos <= target + 0.5f) {
+
+    // 编码器符号自检: 命令某方向行驶而位置持续朝反方向变化 →
+    // 符号学反（寻原点自学习可能被干扰污染），翻转后重新寻原点。
+    static float    symChkStartPos = 0;
+    static uint32_t symChkStartMs  = 0;
+    TraverseDir cdir = g_servo.getDirection();
+    if (TraverseCtl::encoderMode() && g_encoder.ok() &&
+        (cdir == DIR_LEFT || cdir == DIR_RIGHT)) {
+        if (symChkStartMs == 0) { symChkStartMs = millis(); symChkStartPos = pos; }
+        float moved = pos - symChkStartPos;
+        float expect = (cdir == DIR_LEFT) ? -1.0f : 1.0f;
+        if (fabsf(moved) > 3.0f && millis() - symChkStartMs > 300 &&
+            moved * expect < 0) {
+            // 熔断: 连续两次翻转说明位置数据本身是垃圾（I2C 总线异常），
+            // 不再无限寻原点，直接报错
+            static uint8_t symFlips = 0;
+            if (++symFlips >= 2) {
+                symFlips = 0;
+                g_servo.stop();
+                setError(ERR_SENSOR, "编码器位置数据异常（符号反复学反）: "
+                                     "检查 AS5600 接线/干扰，或暂时切回开环模式");
+                return;
+            }
+            g_encoder.setSign(-g_encoder.getSign());
+            Serial.printf("[Winder] 定位方向自检: 位置与行驶方向相反，"
+                          "编码器符号翻转为 %d，重新寻原点\n", g_encoder.getSign());
+            symChkStartMs = 0;
+            _homeGoRight = true;
+            _encRevsAtHomeStart = g_encoder.getRevs();
+            g_servo.moveRight();
+            setState(STATE_HOMING);
+            _homingStartMs = millis();
+            return;
+        }
+    } else {
+        symChkStartMs = 0;
+    }
+
+    if (pos >= target - 2.0f && pos <= target + 2.0f) {
+        // 到位窗口 ±2mm: 定位只需粗到位（绕线闭环自己会精调）。
+        // 满速 ~60mm/s 进停有 ~100ms 舵机延迟 ≈ 4mm 滑行，窗口太窄
+        // 会永远追不准，反而在起点附近来回冲。
         g_servo.stop();
         if (_targetSpeed > 0) {
             g_state.calibCountdown = g_config.calIntervalRounds;
@@ -358,9 +403,12 @@ void Winder::doPositioning() {
             Serial.println("[Winder] 已回到起始位置，待机");
         }
     } else if (pos > target) {
-        if (g_servo.getDirection() != DIR_LEFT) g_servo.moveLeft();
+        if (g_servo.getDirection() != DIR_LEFT) { g_servo.moveLeft(); g_servo.setSpeedFraction(1.0f); }
+        // 近靶减速: 8mm 内降到 35%，抵消 ~100ms 停止延迟带来的 4mm 滑行
+        if (pos - target < 8.0f) g_servo.setSpeedFraction(0.35f);
     } else {
-        if (g_servo.getDirection() != DIR_RIGHT) g_servo.moveRight();
+        if (g_servo.getDirection() != DIR_RIGHT) { g_servo.moveRight(); g_servo.setSpeedFraction(1.0f); }
+        if (target - pos < 8.0f) g_servo.setSpeedFraction(0.35f);
     }
 }
 
