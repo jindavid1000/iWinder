@@ -129,6 +129,8 @@ font-style:normal;font-size:11px;color:#fff;text-shadow:0 1px 2px #000a}
 <h3>驱动与绕线</h3>
 <div class="frow"><label>驱动模式</label><select id="p_driveMode">
 <option value="0">电动（电机）</option><option value="1">手动（手摇）</option></select></div>
+<div class="frow"><label>电机驱动电路</label><select id="p_motorDriver">
+<option value="0">MOS 管调速</option><option value="1">L298N 开关（不调速）</option></select></div>
 <div class="frow"><label>左起始位置 mm</label><input type="number" step="0.5" id="p_traverseLeftStart"></div>
 <div class="frow"><label>右终止位置 mm</label><input type="number" step="0.5" id="p_traverseRightEnd"></div>
 <div class="frow"><label>限位间距 mm</label><input type="number" step="0.5" id="p_travelRangeMm"></div>
@@ -157,7 +159,7 @@ font-style:normal;font-size:11px;color:#fff;text-shadow:0 1px 2px #000a}
 <div class="toast" id="toast"></div>
 <script>
 const $=id=>document.getElementById(id);
-const FIELDS={driveMode:'p_driveMode',traverseLeftStart:'p_traverseLeftStart',traverseRightEnd:'p_traverseRightEnd',
+const FIELDS={driveMode:'p_driveMode',motorDriver:'p_motorDriver',traverseLeftStart:'p_traverseLeftStart',traverseRightEnd:'p_traverseRightEnd',
 travelRangeMm:'p_travelRangeMm',filamentDiameter:'p_filamentDiameter',spoolWidth:'p_spoolWidth',
 calIntervalRounds:'p_calIntervalRounds',hallSpoolMagnets:'p_hallSpoolMagnets',hallDebounceUs:'p_hallDebounceUs',
 traverseEncoder:'p_traverseEncoder',encGearRatio:'p_encGearRatio'};

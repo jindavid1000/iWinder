@@ -37,6 +37,7 @@ void Winder::applyConfig() {
 
     g_sensors.begin(c.pinHallSpool, c.pinEndstop, c.pinEndstopRight,
                     c.hallDebounceUs, c.endstopDebounceUs);
+    g_motor.setDriver(c.motorDriver);
 
     // AS5600 编码器（可选闭环）
     if (c.traverseEncoder) {

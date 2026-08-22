@@ -33,6 +33,20 @@ class SettingsScreen extends StatelessWidget {
                   '每完成设定个来回自动校准一次排线位置。',
               style: const TextStyle(fontSize: 12, color: Colors.grey, height: 1.5),
             ),
+            _DropdownField(label: '电机驱动电路', value: model.config.motorDriver,
+              items: const [
+                DropdownMenuItem(value: 0, child: Text('MOS 管调速（GPIO 输出 PWM）')),
+                DropdownMenuItem(value: 1, child: Text('L298N 开关（不调速，ENA 插跳线）')),
+              ],
+              onChanged: (v) { if (v != null) { model.config.motorDriver = v; model.notifyListeners(); } },
+            ),
+            Text(
+              model.config.motorDriver == 1
+                ? 'L298N 接法：ENA 插跳线帽（全速），ESP32 电机引脚接 IN1，IN2 接 GND，'
+                  '电机方向由接线决定。只能启停，不能调速。'
+                : 'MOS 管接法：GPIO 经 150Ω 接栅极，10kΩ 下拉到 GND，电机两端并联续流二极管。',
+              style: const TextStyle(fontSize: 12, color: Colors.grey, height: 1.5),
+            ),
           ]),
           _ParamCategory(title: '引脚配置', children: [
             _NumField(label: '收线盘 PWM', value: model.config.pinMotorPwm.toDouble(),
