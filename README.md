@@ -1,12 +1,12 @@
 <div align="center">
 
-### 3D 打印智能绕线器 · 手机 APP 无线控制 · 开源
+### 3D 打印智能绕线器 · 手机 APP 无线控制
 
 ESP32 + 舵机丝杆排线 + 直流电机收线，把散装线材整齐绕到任何料盘上。
 
 **不只绕耗材——电线、绳线、织带，通通能绕。**
 
-![License](https://img.shields.io/badge/license-CC%20BY--NC%204.0-blue)
+![License](https://img.shields.io/badge/license-PolyForm--NC%20%2B%20CC%20BY--NC-blue)
 ![Platform](https://img.shields.io/badge/platform-ESP32-orange)
 ![Status](https://img.shields.io/badge/status-v0.1%20beta-yellow)
 
@@ -22,7 +22,7 @@ QQ 交流群：1103884695
 - 🎛️ **全程可调** — 线径、料盘尺寸、速度、排线范围全部 APP 里改，支持保存 10 组预设方案
 - 🔧 **几乎兼容所有料盘** — 拓竹、eSUN、随便什么牌子，尺寸不合适随时调参数
 - 💰 **成本低** — 全套约 ¥56+（不含打印件），手摇版最省
-- 🔓 **完全开源** — 硬件 + 固件 + APP + 3D 模型，CC BY-NC 4.0
+- 🔓 **部分开源** — APP 源码、固件外围源码、硬件与 3D 模型开放（非商业）；核心排线算法闭源，固件以二进制发布
 
 ## 🎯 能绕什么？
 
@@ -171,26 +171,22 @@ QQ 交流群：1103884695
 
 ### 第一步：烧录固件
 
-**安装 PlatformIO**（VS Code 插件或命令行均可）
-
-```bash
-pip install platformio
-```
-
-**烧录**
+固件以编译好的二进制发布（核心算法不开源），到 [Releases](../../releases) 下载最新 `.bin`。
 
 1. USB 连接 ESP32 到电脑
-2. 编译并烧录：
+2. 烧录（PLATFORM 为芯片型号，如 esp32dev）：
 
 ```bash
-cd esp32
-pio run -e esp32 -t upload
+pip install esptool
+esptool.py --chip esp32 write_flash 0x1000 bootloader.bin 0x8000 partitions.bin 0x10000 firmware.bin
 ```
+
+> Releases 提供合并镜像 `iWinder_full.bin` 时，直接 `esptool.py write_flash 0x0 iWinder_full.bin` 即可。
 
 3. 烧录完成后打开串口确认启动成功：
 
 ```bash
-pio device monitor
+pio device monitor   # 或任意串口工具，115200
 ```
 
 > 💡 可单独测试硬件模块：`pio run -e test_motor -t upload`（可选：`test_led`、`test_servo`、`test_hall`、`test_endstop`、`test_encoder`、`test_wifi`）
@@ -308,11 +304,31 @@ ESP32 上电后会启动 **WiFi 热点（ESP-Winder）**。
 
 ---
 
+## 🔑 申请授权
+
+固件内置设备授权：**许可证免费申请，一人一机**。
+
+1. 烧录固件后，浏览器打开设备 Web 界面（或 APP），进入「授权」页
+2. 复制 **设备 ID**（12 位）
+3. 加入 QQ 群 **1103884695** 找作者申请，把设备 ID 发给作者
+4. 收到许可证后粘贴到「授权」页激活，即可启动绕线
+
+> 未授权时可以正常连接、调参、回原点、标定，只是无法启动绕线任务。
+> 商业授权（整机/套件销售、衍生产品）同样通过 QQ 群联系。
+
+---
+
 ## License
 
-CC BY-NC 4.0（署名-非商业性使用 4.0 国际）
+本项目采用分层许可（详见 [LICENSE](LICENSE)）：
 
-本项目硬件设计（3D 模型）和软件代码均可自由使用、修改和分享，但**不得用于商业目的**，使用时需注明出处。详见 [LICENSE](LICENSE)。
+| 内容 | 许可 |
+|------|------|
+| 固件二进制 | 专有许可，免费激活使用，禁止逆向与商用 |
+| APP / 固件外围源码 | PolyForm Noncommercial 1.0.0 |
+| 3D 模型 / 硬件设计 / 文档 | CC BY-NC 4.0 |
+
+3D 打印结构件为经原作者授权的二次创作设计，原作者不允许商用，本项目已获原作者许可并合作开发。
 
 ---
 
