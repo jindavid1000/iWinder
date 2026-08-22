@@ -49,6 +49,7 @@ class DeviceConfig {
 
   // 电机
   int driveMode; // 0=电动 1=手动(手摇)
+  int motorDriver; // 0=MOS管PWM调速 1=L298N开关(不调速)
   int motorMinSpeed;
   int motorDefaultSpeed;
   int motorMaxSpeed;
@@ -79,11 +80,11 @@ class DeviceConfig {
     this.spoolCoreDiaNoCard = 81.5,
     this.spoolHasCardboard = true,
     this.filamentDiameter = 1.75,
-    this.traverseLeftStart = 12.0,
-    this.traverseRightEnd = 62.0,
+    this.traverseLeftStart = 2.0,
+    this.traverseRightEnd = 56.0,
     this.traverseDistPerRev = 1.75,
     this.leadScrewPitch = 22.0,
-    this.travelRangeMm = 64.0,
+    this.travelRangeMm = 59.0,
     this.calIntervalRounds = 3,
     this.servoStopPulse = 1500,
     this.servoLeftPulse = 500,
@@ -99,6 +100,7 @@ class DeviceConfig {
     this.encGearRatio = 1.0,
     this.encMmPerRev = 0.0,
     this.driveMode = 0,
+    this.motorDriver = 0,
     this.motorMinSpeed = 20,
     this.motorDefaultSpeed = 100,
     this.motorMaxSpeed = 100,
@@ -128,11 +130,11 @@ class DeviceConfig {
     c.spoolCoreDiaNoCard = _d(m, 'spoolCoreDiaNoCard', 81.5);
     c.spoolHasCardboard = _i(m, 'spoolHasCardboard', 1) != 0;
     c.filamentDiameter = _d(m, 'filamentDiameter', 1.75);
-    c.traverseLeftStart = _d(m, 'traverseLeftStart', 12.0);
-    c.traverseRightEnd = _d(m, 'traverseRightEnd', 62.0);
+    c.traverseLeftStart = _d(m, 'traverseLeftStart', 2.0);
+    c.traverseRightEnd = _d(m, 'traverseRightEnd', 56.0);
     c.traverseDistPerRev = _d(m, 'traverseDistPerRev', 1.75);
     c.leadScrewPitch = _d(m, 'leadScrewPitch', 22.0);
-    c.travelRangeMm = _d(m, 'travelRangeMm', 64.0);
+    c.travelRangeMm = _d(m, 'travelRangeMm', 59.0);
     c.calIntervalRounds = _i(m, 'calIntervalRounds', 3);
     c.servoStopPulse = _i(m, 'servoStopPulse', 1500);
     c.servoLeftPulse = _i(m, 'servoLeftPulse', 500);
@@ -148,6 +150,7 @@ class DeviceConfig {
     c.encGearRatio = _d(m, 'encGearRatio', 1.0);
     c.encMmPerRev = _d(m, 'encMmPerRev', 0.0);
     c.driveMode = _i(m, 'driveMode', 0);
+    c.motorDriver = _i(m, 'motorDriver', 0);
     c.motorMinSpeed = _i(m, 'motorMinSpeed', 20);
     c.motorDefaultSpeed = _i(m, 'motorDefaultSpeed', 100);
     c.motorMaxSpeed = _i(m, 'motorMaxSpeed', 100);
@@ -197,6 +200,7 @@ class DeviceConfig {
     'encGearRatio': encGearRatio,
     'encMmPerRev': encMmPerRev,
     'driveMode': driveMode,
+    'motorDriver': motorDriver,
     'motorMinSpeed': motorMinSpeed,
     'motorDefaultSpeed': motorDefaultSpeed,
     'motorMaxSpeed': motorMaxSpeed,

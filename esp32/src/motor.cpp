@@ -32,6 +32,30 @@ void Motor::reattach(uint8_t pin) {
     ledcWrite(_channel, 0);
 }
 
+void Motor::setDriver(uint8_t d) {
+    if (!_initialized || d == _driver) { _driver = d; return; }
+    _driver = d;
+    if (d == 1) {
+        // L298N 开关模式: 放弃 PWM，引脚改普通输出。
+        // ENA 插跳线帽保持全速使能，本引脚接 IN1（IN2 接 GND），
+        // 高=转 低=停，方向由接线决定。
+        ledcDetachPin(_pin);
+        ledcWrite(_channel, 0);
+        pinMode(_pin, OUTPUT);
+        digitalWrite(_pin, LOW);
+        _l298On = false;
+        Serial.println("[Motor] 驱动模式: L298N 开关（不调速）");
+    } else {
+        pinMode(_pin, OUTPUT);
+        digitalWrite(_pin, LOW);
+        ledcAttachPin(_pin, _channel);
+        ledcWrite(_channel, 0);
+        _currentSpeed = 0;
+        _targetSpeed  = 0;
+        Serial.println("[Motor] 驱动模式: MOS PWM 调速");
+    }
+}
+
 void Motor::setSpeedPct(float pct) {
     if (pct < 0) pct = 0;
     if (pct > 100) pct = 100;
@@ -40,6 +64,17 @@ void Motor::setSpeedPct(float pct) {
 
 void Motor::update() {
     if (!_initialized) return;
+    if (_driver == 1) {
+        // L298N: 无调速，目标 >0 即通电，=0 即断电。保留软启动斜坡仅作
+        // 状态显示（缠料检测读 getCurrentSpeedPct）
+        bool on = (_targetSpeed > 0.5f);
+        if (on != _l298On) {
+            _l298On = on;
+            digitalWrite(_pin, on ? HIGH : LOW);
+        }
+        _currentSpeed = on ? 100.0f : 0.0f;
+        return;
+    }
     if (_currentSpeed == _targetSpeed) {
         _lastUpdateMs = millis();
         return;
@@ -63,5 +98,11 @@ void Motor::update() {
 void Motor::stop() {
     _targetSpeed  = 0;
     _currentSpeed = 0;
-    if (_initialized) ledcWrite(_channel, 0);
+    if (!_initialized) return;
+    if (_driver == 1) {
+        _l298On = false;
+        digitalWrite(_pin, LOW);
+    } else {
+        ledcWrite(_channel, 0);
+    }
 }

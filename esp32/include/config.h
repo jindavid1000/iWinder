@@ -12,8 +12,8 @@
 //============================================================================
 #define PIN_MOTOR_PWM         4       // 收线盘电机 MOS 管 PWM（IRLB8721 栅极，经 150Ω 电阻）
 #define PIN_SERVO_PWM         5       // 排线舵机 PWM
-#define PIN_ENDSTOP           32       // Endstop 限位信号
-#define PIN_ENDSTOP_RIGHT     14       // Endstop 限位信号 (右)
+#define PIN_ENDSTOP           14       // Endstop 左限位信号
+#define PIN_ENDSTOP_RIGHT     32       // Endstop 右限位信号
 #define PIN_HALL_SPOOL        27       // 霍尔 B — 料盘
 #define PIN_ENC_SDA           21       // AS5600 编码器 SDA（可选，闭环排线用）
 #define PIN_ENC_SCL           22       // AS5600 编码器 SCL
@@ -39,14 +39,17 @@
 //============================================================================
 //  4.5  运动参数
 //============================================================================
-#define TRAVERSE_LEFT_START       12.0f   // 绕线左起始位置 (mm，安装偏右，避开左限位)
-#define TRAVERSE_RIGHT_END        62.0f   // 绕线右终止换向位置 (mm，距右限位留 2mm 余量)
+#define TRAVERSE_LEFT_START       2.0f    // 绕线左起始位置 (mm)。整机右移 10mm 后
+                                          // 料盘左法兰对齐坐标 2，2~62 恰好绕满 60mm
+#define TRAVERSE_RIGHT_END        56.0f   // 绕线右终止换向位置 (mm，距右限位留 2mm 余量)
+                                           // ※ 实测触发间距 58.8mm(右锚64.01-左触发5.2)，
+                                           //   原 64.3 是含柔性回弹的过测量
 #define TRAVERSE_DIST_PER_REV     1.75f   // 料盘每转一圈排线移动距离 (mm)
 #define LEAD_SCREW_PITCH          22.0f   // 丝杆导程 (mm/圈, T8 四头)
 #define CAL_INTERVAL_ROUNDS       3       // 每 N 个来回校准一次
-#define TRAVEL_RANGE_MM           64.0f   // 左右限位之间的实际物理距离 (mm)。
-                                          // ※ 实测值: test_encoder 固件"右停稳→左触发"
-                                          //   2.92圈 × 22mm = 64.3mm，重复性 ±0.1mm。
+#define TRAVEL_RANGE_MM           59.0f   // 左右限位触发点之间的实际物理距离 (mm)。
+                                          // ※ 实测 58.8mm（定位日志: 右锚 64.01、左触发 5.2，
+                                          //   两次重复）。test_encoder 的 64.3 含停稳回弹，偏大。
 
 //============================================================================
 //  4.6  舵机参数 — 鑫辉科技 18KG 数字舵机 (连续旋转)
@@ -190,6 +193,7 @@ struct DeviceConfig {
 
     // --- 电机 ---
     uint8_t  driveMode;           // 0=电动 1=手动(手摇)
+    uint8_t  motorDriver;         // 0=MOS管 PWM 调速 1=L298N 开关(不调速)
     uint16_t motorMinSpeed;
     uint16_t motorDefaultSpeed;
     uint16_t motorMaxSpeed;
@@ -250,6 +254,7 @@ struct DeviceConfig {
         c.encMmPerRev             = 0.0f;   // 0 = 未标定，按 leadScrewPitch × encGearRatio 推算
 
         c.driveMode            = DRIVE_MODE;
+        c.motorDriver          = 0;   // 默认 MOS PWM；L298N 接法见 config 说明
         c.motorMinSpeed         = MOTOR_MIN_SPEED;
         c.motorDefaultSpeed     = MOTOR_DEFAULT_SPEED;
         c.motorMaxSpeed         = MOTOR_MAX_SPEED;

@@ -61,6 +61,7 @@ bool setConfigValue(DeviceConfig &c, const String &key, float value) {
 
     // 电机
     if (key == "driveMode")          { c.driveMode = (uint8_t)value;              return true; }
+    if (key == "motorDriver")        { c.motorDriver = (uint8_t)value;            return true; }
     if (key == "motorMinSpeed")       { c.motorMinSpeed = (uint16_t)value;        return true; }
     if (key == "motorDefaultSpeed")   { c.motorDefaultSpeed = (uint16_t)value;    return true; }
     if (key == "motorMaxSpeed")       { c.motorMaxSpeed = (uint16_t)value;        return true; }
@@ -117,6 +118,7 @@ String getConfigJson(const DeviceConfig &c) {
     doc["encGearRatio"]             = c.encGearRatio;
     doc["encMmPerRev"]              = c.encMmPerRev;
     doc["driveMode"]               = c.driveMode;
+    doc["motorDriver"]             = c.motorDriver;
     doc["motorMinSpeed"]            = c.motorMinSpeed;
     doc["motorDefaultSpeed"]        = c.motorDefaultSpeed;
     doc["motorMaxSpeed"]            = c.motorMaxSpeed;
