@@ -8,7 +8,7 @@ ESP32 + 舵机丝杆排线 + 直流电机收线，把散装线材整齐绕到任
 
 ![License](https://img.shields.io/badge/license-PolyForm--NC%20%2B%20CC%20BY--NC-blue)
 ![Platform](https://img.shields.io/badge/platform-ESP32-orange)
-![Status](https://img.shields.io/badge/status-v0.1%20beta-yellow)
+![Status](https://img.shields.io/badge/status-v0.2%20beta-yellow)
 
 </div>
 
@@ -171,17 +171,18 @@ QQ 交流群：1103884695
 
 ### 第一步：烧录固件
 
-固件以编译好的二进制发布（核心算法不开源），到 [Releases](../../releases) 下载最新 `.bin`。
+固件以编译好的二进制发布（核心算法不开源），最新版本在本仓库 [`firmware/`](firmware/) 目录
+（[Releases](../../releases) 页面有历史版本）。
 
 1. USB 连接 ESP32 到电脑
-2. 烧录（PLATFORM 为芯片型号，如 esp32dev）：
+2. 烧录 `iwinder-*-full.bin`（合并镜像，含引导和分区表，从 0x0 一步烧完）：
 
 ```bash
 pip install esptool
-esptool.py --chip esp32 write_flash 0x1000 bootloader.bin 0x8000 partitions.bin 0x10000 firmware.bin
+esptool.py --chip esp32 --port 串口号 write_flash 0x0 iwinder-v0.2.0-full.bin
 ```
 
-> Releases 提供合并镜像 `iWinder_full.bin` 时，直接 `esptool.py write_flash 0x0 iWinder_full.bin` 即可。
+也可用 Chrome/Edge 打开 [web.esptool.fun](https://web.esptool.fun) 浏览器一键烧录，详见 [`firmware/README.md`](firmware/README.md)。
 
 3. 烧录完成后打开串口确认启动成功：
 
@@ -216,7 +217,8 @@ Web 界面支持控制（启停/调速/手动模式）、实时状态、参数�
 
 也可以使用功能更完整的安卓 APP：
 
-从 [Releases](../../releases) 下载 `app-release.apk`，传到手机安装。
+从本仓库 [`apk/`](apk/) 目录下载最新 `winder-app-*.apk`，传到手机安装
+（[Releases](../../releases) 有历史版本）。
 
 <details>
 <summary>或自行编译（需要 Flutter 环境）</summary>
@@ -270,7 +272,7 @@ ESP32 上电后会启动 **WiFi 热点（ESP-Winder）**。
 | 限位间距 | 左右限位**触发点**之间的真实距离（默认 59mm = 本机实测 58.8）。⚠️ 用 `test_encoder` 测量时注意「右停稳→左触发」含柔性回弹（偏大约 5mm），最准的方法是：绕线/定位日志中右锚定坐标 − 左触发坐标 |
 | 霍尔去抖 | 默认 25000us（滤除电机 PWM 耦合噪声），真实转速超 300RPM 才需调小 |
 | 料盘参数 | 外径、宽度（拓竹料盘宽 60mm，默认已填）、芯轴直径（有/无纸筒可切换）——只影响长度/层数计算 |
-| 绕线范围 | 左起始位置（默认 2mm，与料盘左法兰对齐）、右终止位置（默认 56mm，距右限位留 2mm 余量）——绕线宽度 = 右终止 − 左起始（⚠️ 不是料盘宽度；左起始取决于料盘相对排线机构的安装位置，以导向件对齐料盘左法兰为准） |
+| 绕线范围 | **右基准模型**：右终止位置（默认 56mm，由机器安装决定）+ 料盘宽度 → 左起始自动推导（= 右终止 − 宽度）。换盘只改宽度一个数字；料盘左右都不固定的特殊安装可勾「左起始手动指定」。绕线宽度 = 右终止 − 左起始，界面实时校验与料盘宽度的一致性 |
 | 校准间隔 | 电动: 每几个来回校准一次；手动: 停转触发校准前至少需要的来回数 |
 | 缠料保护 | 电动模式电机运转但料盘 0 转速持续 4 秒自动停机报错 |
 
@@ -282,8 +284,10 @@ ESP32 上电后会启动 **WiFi 热点（ESP-Winder）**。
 ## 📁 项目结构
 
 ```
-├── app/            # Flutter 手机 APP（Android）
-├── esp32/          # ESP32 固件（PlatformIO + Arduino）
+├── app/            # Flutter 手机 APP（Android）源码
+├── apk/            # 编译好的 APP 安装包
+├── esp32/          # ESP32 固件外围源码（核心算法闭源，仅供参考）
+├── firmware/       # 编译好的固件二进制（含烧录说明）
 ├── 模型/           # 3D 打印模型文件（.3mf / .step）
 ├── BOM/            # 硬件采购清单（三个版本）
 └── 设定/           # 开发文档
