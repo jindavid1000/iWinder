@@ -1,30 +1,57 @@
-# 固件下载
+# 固件下载与烧录
 
-| 文件 | 用途 |
-|------|------|
-| `iwinder-vX.Y.Z-full.bin` | **完整镜像**（含 bootloader + 分区表 + 固件），从 0x0 烧写，普通用户用这个 |
-| `iwinder-vX.Y.Z.bin` | 仅应用程序，已跑着固件的设备 OTA/地址 0x10000 更新用 |
+## 文件说明
 
-## 烧录方法
+| 文件 | 烧录地址 |
+|------|---------|
+| `iwinder-vX.Y.Z-bootloader.bin` | **0x1000**（引导程序） |
+| `iwinder-vX.Y.Z-partitions.bin` | **0x8000**（分区表） |
+| `iwinder-vX.Y.Z-boot_app0.bin` | **0xE000**（OTA 启动配置） |
+| `iwinder-vX.Y.Z.bin` | **0x10000**（应用固件） |
+| `iwinder-vX.Y.Z-full.bin` | 0x0（四合一合并镜像，仅命令行用） |
 
-**方式一：Web 一键烧录（推荐）**
+## 方式一：网页烧录（推荐，无需装任何软件）
 
-Chrome/Edge 浏览器打开 [web.esptool.fun](https://web.esptool.fun)，选 `*-full.bin`，地址填 `0x0`，连上 ESP32 点安装。
+1. 用 **Chrome 或 Edge** 打开 **[esptool.spacehuhn.com](https://esptool.spacehuhn.com/)**
+2. USB 线连接 ESP32 到电脑
+3. 点 **Connect** → 浏览器弹出串口选择框 → 选择你的 ESP32 串口（Windows 是 `COMx`，Mac 是 `/dev/cu.usbserial-xxxx`）
+   - 如果列表为空：安装 CH340/CP2102 驱动后刷新页面重试
+4. 按下表填入四个槽位的文件（版本号换成你下载的）：
 
-**方式二：esptool 命令行**
+| 槽位 | 选择文件 |
+|------|---------|
+| 0x1000 | `iwinder-v0.2.0-bootloader.bin` |
+| 0x8000 | `iwinder-v0.2.0-partitions.bin` |
+| 0xE000 | `iwinder-v0.2.0-boot_app0.bin` |
+| 0x10000 | `iwinder-v0.2.0.bin` |
+
+5. 波特率保持默认，点 **Flash** → 等进度条走完（约 30~60 秒）
+6. 出现 "Done" 后重新上电，ESP32 会启动热点 **ESP-Winder**
+
+> 💡 **已运行 iWinder 固件、只想升级**：只填 **0x10000** 一个槽（应用固件），
+> 其余留空——引导和分区不用重刷，设备参数也不会丢。
+>
+> 💡 浏览器烧录使用 Web Serial API，目前 Chrome/Edge 支持；
+> Safari 和 Firefox 不支持，请换 Chrome 或 Edge。
+
+## 方式二：esptool 命令行
 
 ```bash
 pip install esptool
+
+# 方法 A: 合并镜像一步烧录（等效四文件，适合全新芯片）
 esptool.py --chip esp32 --port /dev/cu.usbserial-XXXX \
     write_flash 0x0 iwinder-v0.2.0-full.bin
+
+# 方法 B: 四文件分开烧（等效网页方式）
+esptool.py --chip esp32 --port /dev/cu.usbserial-XXXX write_flash \
+    0x1000 iwinder-v0.2.0-bootloader.bin \
+    0x8000 iwinder-v0.2.0-partitions.bin \
+    0xE000  iwinder-v0.2.0-boot_app0.bin \
+    0x10000 iwinder-v0.2.0.bin
 ```
 
 （Windows 把 port 换成 `COM3` 之类的串口号）
-
-**方式三：PlatformIO（开发者）**
-
-本仓库 `esp32/` 目录只含外围源码，完整源码不公开；
-用 PlatformIO 烧录完整固件请直接使用上面的 bin 文件。
 
 ## 首次启动
 

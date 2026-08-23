@@ -174,21 +174,20 @@ QQ 交流群：1103884695
 固件以编译好的二进制发布（核心算法不开源），最新版本在本仓库 [`firmware/`](firmware/) 目录
 （[Releases](../../releases) 页面有历史版本）。
 
+**网页烧录（推荐，无需装任何软件）**：
+
 1. USB 连接 ESP32 到电脑
-2. 烧录 `iwinder-*-full.bin`（合并镜像，含引导和分区表，从 0x0 一步烧完）：
+2. Chrome/Edge 打开 **[esptool.spacehuhn.com](https://esptool.spacehuhn.com/)** → Connect 选串口
+3. 四个槽位按 [`firmware/README.md`](firmware/README.md) 的对照表填入对应文件 → Flash
+
+**命令行烧录**（合并镜像一步完成）：
 
 ```bash
 pip install esptool
 esptool.py --chip esp32 --port 串口号 write_flash 0x0 iwinder-v0.2.0-full.bin
 ```
 
-也可用 Chrome/Edge 打开 [web.esptool.fun](https://web.esptool.fun) 浏览器一键烧录，详见 [`firmware/README.md`](firmware/README.md)。
-
-3. 烧录完成后打开串口确认启动成功：
-
-```bash
-pio device monitor   # 或任意串口工具，115200
-```
+烧录完成后设备自动启动热点 **ESP-Winder**（串口 115200 可看启动日志）。
 
 > 💡 可单独测试硬件模块：`pio run -e test_motor -t upload`（可选：`test_led`、`test_servo`、`test_hall`、`test_endstop`、`test_encoder`、`test_wifi`）
 >
