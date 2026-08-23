@@ -75,7 +75,7 @@ class SettingsScreen extends StatelessWidget {
             _NumField(label: '料盘外径 (mm)', value: model.config.spoolOuterDiameter,
                 onChanged: (v) => model.config.spoolOuterDiameter = v),
             _NumField(label: '料盘宽度 (mm)', value: model.config.spoolWidth,
-                onChanged: (v) => model.config.spoolWidth = v),
+                onChanged: model.setSpoolWidth),
             _NumField(label: '有纸筒直径 (mm)', value: model.config.spoolCoreDiaWithCard,
                 onChanged: (v) => model.config.spoolCoreDiaWithCard = v),
             _NumField(label: '无纸筒直径 (mm)', value: model.config.spoolCoreDiaNoCard,
@@ -89,10 +89,7 @@ class SettingsScreen extends StatelessWidget {
             ),
           ]),
           _ParamCategory(title: '运动参数', children: [
-            _NumField(label: '左起始位置 (mm)', value: model.config.traverseLeftStart,
-                onChanged: (v) => model.config.traverseLeftStart = v),
-            _NumField(label: '右终止位置 (mm)', value: model.config.traverseRightEnd,
-                onChanged: (v) => model.config.traverseRightEnd = v),
+            _TraverseRangeFields(model: model),
             _NumField(label: '单圈移动距离 (mm)', value: model.config.traverseDistPerRev,
                 onChanged: (v) => model.config.traverseDistPerRev = v),
             _NumField(label: '丝杆导程 (mm)', value: model.config.leadScrewPitch,
@@ -102,11 +99,6 @@ class SettingsScreen extends StatelessWidget {
             _NumField(label: model.config.driveMode == 1 ? '校准间隔 (来回, 停转触发)' : '校准间隔 (来回)',
                 value: model.config.calIntervalRounds.toDouble(),
                 onChanged: (v) => model.config.calIntervalRounds = v.round()),
-            const Text(
-              '绕线宽度 = 右终止位置 − 左起始位置（想绕窄一点就改这两个值）。\n'
-              '「料盘宽度」只用于长度/层数计算，不影响绕线范围。',
-              style: TextStyle(fontSize: 12, color: Colors.grey, height: 1.5),
-            ),
           ]),
           _ParamCategory(title: '舵机参数', children: [
             _NumField(label: '停止 PWM (us)', value: model.config.servoStopPulse.toDouble(),
@@ -239,10 +231,154 @@ class SettingsScreen extends StatelessWidget {
               onChanged: (v) { model.config.wifiDisconnectStop = v; model.notifyListeners(); },
             ),
           ]),
+          _LicenseSection(model: model),
           _DangerZone(model: model),
         ],
       ),
     );
+  }
+}
+
+// ============================================================================
+//  设备授权（粘贴许可证激活）
+// ============================================================================
+class _LicenseSection extends StatefulWidget {
+  final AppModel model;
+  const _LicenseSection({required this.model});
+
+  @override
+  State<_LicenseSection> createState() => _LicenseSectionState();
+}
+
+class _LicenseSectionState extends State<_LicenseSection> {
+  final _keyCtrl = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // 进入页面时查询一次授权状态
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.model.sendLicenseQuery();
+    });
+  }
+
+  @override
+  void dispose() {
+    _keyCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final m = widget.model;
+    return Card(
+      margin: const EdgeInsets.only(top: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              const Expanded(child: Text('设备授权', style: TextStyle(fontWeight: FontWeight.bold))),
+              Icon(m.licenseOk ? Icons.verified : Icons.warning_amber_rounded,
+                  color: m.licenseOk ? Colors.green : Colors.orange, size: 20),
+              const SizedBox(width: 4),
+              Text(m.licenseOk ? '已授权' : '未授权',
+                  style: TextStyle(color: m.licenseOk ? Colors.green : Colors.orange,
+                      fontWeight: FontWeight.bold)),
+            ]),
+            const SizedBox(height: 8),
+            Text('设备ID: ${m.licenseDeviceId ?? "--"}',
+                style: const TextStyle(fontSize: 13, fontFeatures: [FontFeature.tabularFigures()])),
+            if (m.licenseOk && m.licenseExpiry != null)
+              Text('有效期至: ${m.licenseExpiry}',
+                  style: const TextStyle(fontSize: 13, color: Colors.grey)),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _keyCtrl,
+              decoration: const InputDecoration(
+                labelText: '许可证',
+                hintText: '粘贴许可证字符串',
+                isDense: true,
+                border: OutlineInputBorder(),
+              ),
+              style: const TextStyle(fontSize: 12),
+              maxLines: 2,
+            ),
+            const SizedBox(height: 8),
+            Row(children: [
+              FilledButton(
+                onPressed: _keyCtrl.text.trim().isEmpty
+                    ? null
+                    : () {
+                        m.sendLicenseActivate(_keyCtrl.text.trim());
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('激活请求已发送')),
+                        );
+                      },
+                child: const Text('激活'),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton(
+                onPressed: () => m.sendLicenseQuery(),
+                child: const Text('刷新状态'),
+              ),
+            ]),
+            const SizedBox(height: 8),
+            const Text(
+              '未授权时无法启动绕线。把设备ID发给作者申请许可证，粘贴到上面激活。',
+              style: TextStyle(fontSize: 12, color: Colors.grey, height: 1.5),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================================
+//  绕线范围（右基准 + 宽度推导左起始）
+//  左起始 = 右终止 − 料盘宽度，自动推导；特殊安装可切手动指定。
+// ============================================================================
+class _TraverseRangeFields extends StatelessWidget {
+  final AppModel model;
+  const _TraverseRangeFields({required this.model});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = model.config;
+    final width = c.traverseRightEnd - c.traverseLeftStart;
+    final mismatch = (width - c.spoolWidth).abs() > 0.5;
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      _NumField(label: '右终止位置 (mm)', value: c.traverseRightEnd,
+          onChanged: model.setTraverseRightEnd),
+      if (model.leftAutoDerive)
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Text('左起始位置 = ${(c.traverseLeftStart).toStringAsFixed(1)} mm（= 右终止 − 料盘宽度，自动）',
+              style: const TextStyle(fontSize: 13, color: Colors.blueGrey)),
+        )
+      else
+        _NumField(label: '左起始位置 (mm)', value: c.traverseLeftStart,
+            onChanged: (v) => c.traverseLeftStart = v),
+      SwitchListTile(
+        dense: true,
+        title: const Text('左起始手动指定'),
+        subtitle: const Text('料盘左右位置都不固定时打开', style: TextStyle(fontSize: 11)),
+        value: !model.leftAutoDerive,
+        onChanged: (v) { model.leftAutoDerive = !v; model.notifyListeners(); },
+      ),
+      Text(
+        mismatch
+            ? '⚠ 绕线宽度 ${width.toStringAsFixed(1)}mm 与料盘宽度 ${c.spoolWidth.toStringAsFixed(1)}mm 不一致'
+            : '绕线宽度 ${width.toStringAsFixed(1)}mm，与料盘宽度一致 ✓',
+        style: TextStyle(
+            fontSize: 12,
+            color: mismatch ? Colors.orange.shade800 : Colors.grey,
+            height: 1.5),
+      ),
+    ]);
   }
 }
 

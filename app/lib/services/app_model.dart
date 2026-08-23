@@ -227,6 +227,41 @@ class AppModel extends ChangeNotifier {
   void sendGetWifiStatus() => _send({'cmd': 'get_wifi_status'});
   void sendClearError() => _send({'cmd': 'clear_error'});
   void sendFactoryReset() => _send({'cmd': 'factory_reset'});
+
+  // ===========================================================================
+  //  设备授权
+  // ===========================================================================
+  String? licenseDeviceId;
+  bool licenseOk = false;
+  String? licenseExpiry;
+
+  void sendLicenseQuery() => _send({'cmd': 'license'});
+  void sendLicenseActivate(String key) => _send({'cmd': 'license', 'key': key});
+
+  // ===========================================================================
+  //  绕线范围联动（消除冗余定义）
+  //  物理模型: 料盘靠一侧安装，右法兰坐标(右终止)由机器安装决定，
+  //  左起始 = 右终止 − 料盘宽度，自动推导，杜绝两边参数打架。
+  //  特殊安装(左右都不固定)可切手动指定。
+  // ===========================================================================
+  bool leftAutoDerive = true;
+
+  void setSpoolWidth(double v) {
+    config.spoolWidth = v;
+    _syncLeftStart();
+  }
+
+  void setTraverseRightEnd(double v) {
+    config.traverseRightEnd = v;
+    _syncLeftStart();
+  }
+
+  void _syncLeftStart() {
+    if (!leftAutoDerive) return;
+    final left = config.traverseRightEnd - config.spoolWidth;
+    config.traverseLeftStart = left.clamp(0.0, config.traverseRightEnd);
+    notifyListeners();
+  }
   void sendCalibrateServo() => _send({'cmd': 'calibrate_servo'});
 
   // 下发当前配置到 ESP
@@ -278,7 +313,16 @@ class AppModel extends ChangeNotifier {
             _saveDeviceIP(deviceIP!, deviceSSID ?? '');
           }
           break;
+        case 'license':
+          licenseDeviceId = msg['device_id'] as String?;
+          licenseOk = msg['licensed'] as bool? ?? false;
+          licenseExpiry = msg['expiry'] as String?;
+          break;
         case 'response':
+          // 激活/许可证命令的响应 → 刷新授权状态
+          if (msg['cmd'] == 'license') {
+            sendLicenseQuery();
+          }
           if (msg['ok'] == true && msg['cmd'] == 'calibrate_servo') {
             // 标定已开始，等结果
           }

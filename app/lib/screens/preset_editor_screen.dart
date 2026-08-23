@@ -19,11 +19,19 @@ class PresetEditorScreen extends StatefulWidget {
 
 class _PresetEditorScreenState extends State<PresetEditorScreen> {
   late DeviceConfig _cfg;
+  bool _leftManual = false;
 
   @override
   void initState() {
     super.initState();
     _cfg = widget.initialConfig.copy();
+  }
+
+  // 左起始 = 右终止 − 料盘宽度（消除冗余定义），手动模式除外
+  void _syncLeft() {
+    if (_leftManual) return;
+    _cfg.traverseLeftStart =
+        (_cfg.traverseRightEnd - _cfg.spoolWidth).clamp(0.0, _cfg.traverseRightEnd);
   }
 
   void _save() => Navigator.pop(context, _cfg);
@@ -62,7 +70,7 @@ class _PresetEditorScreenState extends State<PresetEditorScreen> {
             _Num(label: '料盘外径 (mm)', val: _cfg.spoolOuterDiameter,
               on: (v) => _cfg.spoolOuterDiameter = v),
             _Num(label: '料盘宽度 (mm)', val: _cfg.spoolWidth,
-              on: (v) => _cfg.spoolWidth = v),
+              on: (v) { setState(() { _cfg.spoolWidth = v; _syncLeft(); }); }),
             _Num(label: '有纸筒直径 (mm)', val: _cfg.spoolCoreDiaWithCard,
               on: (v) => _cfg.spoolCoreDiaWithCard = v),
             _Num(label: '无纸筒直径 (mm)', val: _cfg.spoolCoreDiaNoCard,
@@ -76,10 +84,34 @@ class _PresetEditorScreenState extends State<PresetEditorScreen> {
             ),
           ]),
           _Category(title: '运动参数', children: [
-            _Num(label: '左起始位置 (mm)', val: _cfg.traverseLeftStart,
-              on: (v) => _cfg.traverseLeftStart = v),
+            if (_leftManual)
+              _Num(label: '左起始位置 (mm)', val: _cfg.traverseLeftStart,
+                on: (v) => _cfg.traverseLeftStart = v)
+            else
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text('左起始 = ${_cfg.traverseLeftStart.toStringAsFixed(1)} mm（= 右终止 − 料盘宽度，自动）',
+                    style: const TextStyle(fontSize: 13, color: Colors.blueGrey)),
+              ),
             _Num(label: '右终止位置 (mm)', val: _cfg.traverseRightEnd,
-              on: (v) => _cfg.traverseRightEnd = v),
+              on: (v) { setState(() { _cfg.traverseRightEnd = v; _syncLeft(); }); }),
+            SwitchListTile(
+              dense: true,
+              title: const Text('左起始手动指定'),
+              subtitle: const Text('料盘左右位置都不固定时打开', style: TextStyle(fontSize: 11)),
+              value: _leftManual,
+              onChanged: (v) => setState(() => _leftManual = v),
+            ),
+            Builder(builder: (_) {
+              final w = _cfg.traverseRightEnd - _cfg.traverseLeftStart;
+              final mismatch = (w - _cfg.spoolWidth).abs() > 0.5;
+              return Text(
+                mismatch
+                    ? '⚠ 绕线宽度 ${w.toStringAsFixed(1)}mm 与料盘宽度 ${_cfg.spoolWidth.toStringAsFixed(1)}mm 不一致'
+                    : '绕线宽度 ${w.toStringAsFixed(1)}mm，与料盘宽度一致 ✓',
+                style: TextStyle(fontSize: 12, color: mismatch ? Colors.orange.shade800 : Colors.grey),
+              );
+            }),
             _Num(label: '单圈移动距离 (mm)', val: _cfg.traverseDistPerRev,
               on: (v) => _cfg.traverseDistPerRev = v),
             _Num(label: '丝杆导程 (mm)', val: _cfg.leadScrewPitch,
