@@ -131,13 +131,16 @@ font-style:normal;font-size:11px;color:#fff;text-shadow:0 1px 2px #000a}
 <option value="0">电动（电机）</option><option value="1">手动（手摇）</option></select></div>
 <div class="frow"><label>电机驱动电路</label><select id="p_motorDriver">
 <option value="0">MOS 管调速</option><option value="1">L298N 开关（不调速）</option></select></div>
-<div class="frow"><label>左起始位置 mm</label><input type="number" step="0.5" id="p_traverseLeftStart"></div>
+<div class="frow"><label>左起始位置 mm</label><input type="number" step="0.5" id="p_traverseLeftStart" readonly></div>
+<div class="frow"><label>左起始手动指定</label><input type="checkbox" id="p_leftManual"
+onchange="$('p_traverseLeftStart').readOnly=!this.checked;syncLeftHint()"></div>
 <div class="frow"><label>右终止位置 mm</label><input type="number" step="0.5" id="p_traverseRightEnd"></div>
 <div class="frow"><label>限位间距 mm</label><input type="number" step="0.5" id="p_travelRangeMm"></div>
 <div class="frow"><label>线径 mm</label><input type="number" step="0.01" id="p_filamentDiameter"></div>
 <div class="frow"><label>料盘宽度 mm</label><input type="number" step="1" id="p_spoolWidth"></div>
 <div class="frow"><label>校准间隔 (来回)</label><input type="number" step="1" id="p_calIntervalRounds"></div>
-<div class="tip">绕线宽度 = 右终止 − 左起始（料盘宽度只用于长度计算）。</div>
+<div class="tip">左起始 = 右终止 − 料盘宽度（自动推导，改料盘宽度即换盘）；
+料盘左右位置都不固定时勾选手动指定。绕线宽度 = 右终止 − 左起始。</div>
 </div>
 <div class="card">
 <h3>传感器</h3>
@@ -187,6 +190,15 @@ const j=await r.json();if(j.ok===false)toast('失败: '+(j.msg||''));else toast(
 poll();}catch(e){toast('发送失败');}
 }
 function doStart(){cmd({cmd:'start',speed:manualMode?0:+$('spd').value});}
+
+// 绕线范围联动: 左起始 = 右终止 − 料盘宽度（右基准模型，消除冗余定义）
+function syncLeft(){if($('p_leftManual').checked)return;
+const r=+$('p_traverseRightEnd').value||0,w=+$('p_spoolWidth').value||0;
+$('p_traverseLeftStart').value=Math.max(0,r-w).toFixed(1);}
+['p_traverseRightEnd','p_spoolWidth'].forEach(id=>$(id).addEventListener('input',syncLeft));
+function syncLeftHint(){const r=+$('p_traverseRightEnd').value||0,l=+$('p_traverseLeftStart').value||0,
+w=+$('p_spoolWidth').value||0,d=(r-l)-w;
+$('p_traverseLeftStart').style.background=Math.abs(d)>0.5?'#5a3a1a':'';}
 
 async function sendWifi(){
 const ssid=$('w_ssid').value.trim(),pass=$('w_pass').value;
