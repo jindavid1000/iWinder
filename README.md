@@ -178,7 +178,10 @@ QQ 交流群：1103884695
 
 1. USB 连接 ESP32 到电脑
 2. Chrome/Edge 打开 **[esptool.spacehuhn.com](https://esptool.spacehuhn.com/)** → Connect 选串口
-3. 四个槽位按 [`firmware/README.md`](firmware/README.md) 的对照表填入对应文件 → Flash
+3. 第一个槽地址改成 **0x0**，选 `iwinder-v0.2.0-full.bin`（合并镜像），其余槽留空 → Flash
+4. 完成 → 重新上电，ESP32 启动热点 **ESP-Winder**
+
+详细步骤（含增量升级方法）见 [`firmware/README.md`](firmware/README.md)。
 
 **命令行烧录**（合并镜像一步完成）：
 
