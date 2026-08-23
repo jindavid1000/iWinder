@@ -8,7 +8,7 @@ ESP32 + 舵机丝杆排线 + 直流电机收线，把散装线材整齐绕到任
 
 ![License](https://img.shields.io/badge/license-PolyForm--NC%20%2B%20CC%20BY--NC-blue)
 ![Platform](https://img.shields.io/badge/platform-ESP32-orange)
-![Status](https://img.shields.io/badge/status-v0.2%20beta-yellow)
+![Status](https://img.shields.io/badge/status-v0.2.1%20beta-yellow)
 
 </div>
 
@@ -178,7 +178,7 @@ QQ 交流群：1103884695
 
 1. USB 连接 ESP32 到电脑
 2. Chrome/Edge 打开 **[esptool.spacehuhn.com](https://esptool.spacehuhn.com/)** → Connect 选串口
-3. 第一个槽地址改成 **0x0**，选 `iwinder-v0.2.0-full.bin`（合并镜像），其余槽留空 → Flash
+3. 第一个槽地址改成 **0x0**，选 `iwinder-v0.2.1-full.bin`（合并镜像），其余槽留空 → Flash
 4. 完成 → 重新上电，ESP32 启动热点 **ESP-Winder**
 
 详细步骤（含增量升级方法）见 [`firmware/README.md`](firmware/README.md)。
@@ -187,7 +187,7 @@ QQ 交流群：1103884695
 
 ```bash
 pip install esptool
-esptool.py --chip esp32 --port 串口号 write_flash 0x0 iwinder-v0.2.0-full.bin
+esptool.py --chip esp32 --port 串口号 write_flash 0x0 iwinder-v0.2.1-full.bin
 ```
 
 烧录完成后设备自动启动热点 **ESP-Winder**（串口 115200 可看启动日志）。
