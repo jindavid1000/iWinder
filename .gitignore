@@ -23,3 +23,11 @@ esp32/.vscode/
 .idea/
 *.swp
 *.swo
+
+# 核心算法闭源（仅本地编译用，不入库）
+esp32/src/traverse.cpp
+esp32/src/winder.cpp
+esp32/src/calib_servo.cpp
+esp32/include/traverse.h
+esp32/include/winder.h
+esp32/include/calib_servo.h

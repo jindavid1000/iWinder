@@ -150,6 +150,15 @@ font-style:normal;font-size:11px;color:#fff;text-shadow:0 1px 2px #000a}
 <option value="0">舵机开环估算</option><option value="1">AS5600 闭环</option></select></div>
 <div class="frow"><label>增速齿比</label><input type="number" step="0.1" id="p_encGearRatio"></div>
 </div>
+<div class="card">
+<h3>WiFi 配网</h3>
+<div class="frow"><label>WiFi 名称</label><input id="w_ssid" placeholder="家庭 WiFi SSID"></div>
+<div class="frow"><label>WiFi 密码</label><input id="w_pass" type="password" placeholder="WiFi 密码"></div>
+<button class="save" onclick="sendWifi()">发送配网</button>
+<div class="tip">配网后设备接入家庭 WiFi（连接需数秒~半分钟，本页面期间可能短暂无响应）。
+热点模式下 <b>iwinder.local 不可用属正常</b>——请始终用 192.168.4.1 访问热点；
+连入家庭 WiFi 后同一网络的 iOS/macOS 才能用 http://iwinder.local，其他设备从状态页查看 IP。</div>
+</div>
 <button class="save" onclick="saveParams()">保存并下发</button>
 <button class="calib" onclick="if(confirm('排线将满速运动数个来回进行标定，确认开始？'))cmd({cmd:'calibrate_servo'})">
 舵机速度标定</button>
@@ -178,6 +187,16 @@ const j=await r.json();if(j.ok===false)toast('失败: '+(j.msg||''));else toast(
 poll();}catch(e){toast('发送失败');}
 }
 function doStart(){cmd({cmd:'start',speed:manualMode?0:+$('spd').value});}
+
+async function sendWifi(){
+const ssid=$('w_ssid').value.trim(),pass=$('w_pass').value;
+if(!ssid){toast('请填写 WiFi 名称');return;}
+toast('正在发送配网...');
+try{const r=await fetch('/api/cmd',{method:'POST',headers:{'Content-Type':'application/json'},
+body:JSON.stringify({cmd:'set_wifi',ssid:ssid,password:pass})});
+const j=await r.json();
+toast(j.ok?'配网成功，设备正在连接 '+ssid:'失败: '+(j.msg||'未知错误'));}
+catch(e){toast('发送失败，设备可能正在重连网络');}}
 
 let manualMode=false,dragT=0;
 $('spd').addEventListener('input',e=>{
