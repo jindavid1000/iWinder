@@ -81,10 +81,10 @@ class DeviceConfig {
     this.spoolHasCardboard = true,
     this.filamentDiameter = 1.75,
     this.traverseLeftStart = 2.0,
-    this.traverseRightEnd = 56.0,
+    this.traverseRightEnd = 62.0,
     this.traverseDistPerRev = 1.75,
     this.leadScrewPitch = 22.0,
-    this.travelRangeMm = 59.0,
+    this.travelRangeMm = 62.0,
     this.calIntervalRounds = 3,
     this.servoStopPulse = 1500,
     this.servoLeftPulse = 500,
@@ -131,10 +131,10 @@ class DeviceConfig {
     c.spoolHasCardboard = _i(m, 'spoolHasCardboard', 1) != 0;
     c.filamentDiameter = _d(m, 'filamentDiameter', 1.75);
     c.traverseLeftStart = _d(m, 'traverseLeftStart', 2.0);
-    c.traverseRightEnd = _d(m, 'traverseRightEnd', 56.0);
+    c.traverseRightEnd = _d(m, 'traverseRightEnd', 62.0);
     c.traverseDistPerRev = _d(m, 'traverseDistPerRev', 1.75);
     c.leadScrewPitch = _d(m, 'leadScrewPitch', 22.0);
-    c.travelRangeMm = _d(m, 'travelRangeMm', 59.0);
+    c.travelRangeMm = _d(m, 'travelRangeMm', 62.0);
     c.calIntervalRounds = _i(m, 'calIntervalRounds', 3);
     c.servoStopPulse = _i(m, 'servoStopPulse', 1500);
     c.servoLeftPulse = _i(m, 'servoLeftPulse', 500);
