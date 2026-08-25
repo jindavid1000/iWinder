@@ -219,7 +219,7 @@ Web 界面支持控制（启停/调速/手动模式）、实时状态、参数�
 
 也可以使用功能更完整的安卓 APP：
 
-从本仓库 [`apk/`](apk/) 目录下载最新 `winder-app-*.apk`，传到手机安装
+从本仓库 [`firmware/`](firmware/) 目录下载最新 `app-release.apk`，传到手机安装
 （[Releases](../../releases) 有历史版本）。
 
 <details>
