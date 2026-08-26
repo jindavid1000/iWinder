@@ -232,8 +232,80 @@ class SettingsScreen extends StatelessWidget {
             ),
           ]),
           _LicenseSection(model: model),
+          _FirmwareSection(model: model),
           _DangerZone(model: model),
         ],
+      ),
+    );
+  }
+}
+
+// ============================================================================
+//  固件在线升级（OTA）
+// ============================================================================
+class _FirmwareSection extends StatelessWidget {
+  final AppModel model;
+  const _FirmwareSection({required this.model});
+
+  @override
+  Widget build(BuildContext context) {
+    final m = model;
+    return Card(
+      margin: const EdgeInsets.only(top: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              const Expanded(child: Text('固件升级',
+                  style: TextStyle(fontWeight: FontWeight.bold))),
+              Icon(m.fwUpdateAvailable ? Icons.system_update_alt : Icons.check_circle_outline,
+                  color: m.fwUpdateAvailable ? Colors.orange : Colors.green, size: 20),
+              const SizedBox(width: 4),
+              Text(m.fwUpdateAvailable ? '有新版本' : '最新',
+                  style: TextStyle(
+                      color: m.fwUpdateAvailable ? Colors.orange : Colors.green,
+                      fontWeight: FontWeight.bold)),
+            ]),
+            const SizedBox(height: 8),
+            Text('当前版本: v${m.fwCurrent ?? "--"}',
+                style: const TextStyle(fontSize: 13)),
+            if (m.fwUpdateAvailable && m.fwLatest != null)
+              Text('最新版本: v${m.fwLatest}',
+                  style: const TextStyle(fontSize: 13, color: Colors.orange)),
+            if (m.fwNotes != null && m.fwNotes!.isNotEmpty)
+              Text(m.fwNotes!,
+                  style: const TextStyle(fontSize: 12, color: Colors.grey)),
+            if (m.fwMsg != null && m.fwMsg!.isNotEmpty)
+              Text(m.fwMsg!,
+                  style: const TextStyle(fontSize: 12, color: Colors.blueGrey)),
+            const SizedBox(height: 10),
+            Row(children: [
+              OutlinedButton(
+                onPressed: () {
+                  model.sendOtaCheck();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('正在检查更新…')),
+                  );
+                },
+                child: const Text('检查更新'),
+              ),
+              const SizedBox(width: 8),
+              FilledButton(
+                onPressed: m.fwUpdateAvailable
+                    ? () {
+                        model.sendOtaStart();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('开始升级，完成后设备将自动重启（约1-2分钟）')),
+                        );
+                      }
+                    : null,
+                child: const Text('立即升级'),
+              ),
+            ]),
+          ],
+        ),
       ),
     );
   }
@@ -252,6 +324,9 @@ class _LicenseSection extends StatefulWidget {
 
 class _LicenseSectionState extends State<_LicenseSection> {
   final _keyCtrl = TextEditingController();
+  final _nameCtrl = TextEditingController();
+  final _contactCtrl = TextEditingController();
+  String? _lastAutoFill;
 
   @override
   void initState() {
@@ -260,11 +335,26 @@ class _LicenseSectionState extends State<_LicenseSection> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       widget.model.sendLicenseQuery();
     });
+    // 服务器返回许可证时自动填入输入框（同一张许可证只填一次）
+    widget.model.addListener(_autoFill);
+  }
+
+  void _autoFill() {
+    final m = widget.model;
+    if (m.serverLicense != null &&
+        m.serverLicense != _lastAutoFill &&
+        m.serverLicense!.isNotEmpty) {
+      _lastAutoFill = m.serverLicense;
+      _keyCtrl.text = m.serverLicense!;
+    }
   }
 
   @override
   void dispose() {
+    widget.model.removeListener(_autoFill);
     _keyCtrl.dispose();
+    _nameCtrl.dispose();
+    _contactCtrl.dispose();
     super.dispose();
   }
 
@@ -306,27 +396,81 @@ class _LicenseSectionState extends State<_LicenseSection> {
               maxLines: 2,
             ),
             const SizedBox(height: 8),
+            TextField(
+              controller: _nameCtrl,
+              decoration: const InputDecoration(
+                labelText: '昵称/QQ号（一键申请必填）',
+                isDense: true,
+                border: OutlineInputBorder(),
+              ),
+              style: const TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _contactCtrl,
+              decoration: const InputDecoration(
+                labelText: '联系方式（选填）',
+                isDense: true,
+                border: OutlineInputBorder(),
+              ),
+              style: const TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 10),
             Row(children: [
-              FilledButton(
-                onPressed: _keyCtrl.text.trim().isEmpty
-                    ? null
-                    : () {
-                        m.sendLicenseActivate(_keyCtrl.text.trim());
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('激活请求已发送')),
-                        );
-                      },
-                child: const Text('激活'),
+              Expanded(
+                child: FilledButton(
+                  onPressed: _keyCtrl.text.trim().isEmpty
+                      ? null
+                      : () {
+                          m.sendLicenseActivate(_keyCtrl.text.trim());
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('激活请求已发送')),
+                          );
+                        },
+                  child: const Text('激活'),
+                ),
               ),
               const SizedBox(width: 8),
               OutlinedButton(
-                onPressed: () => m.sendLicenseQuery(),
-                child: const Text('刷新状态'),
+                onPressed: () {
+                  if (_nameCtrl.text.trim().isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('请先填写昵称/QQ号')),
+                    );
+                    return;
+                  }
+                  m.sendLicenseApply(
+                      _nameCtrl.text.trim(), _contactCtrl.text.trim());
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('申请已提交，请稍候…')),
+                  );
+                },
+                child: const Text('一键申请'),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton(
+                onPressed: () {
+                  m.sendLicenseFetch();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('正在查询…')),
+                  );
+                },
+                child: const Text('查询'),
               ),
             ]),
+            if (m.serverLicenseMsg != null) ...[
+              const SizedBox(height: 8),
+              Text(m.serverLicenseMsg!,
+                  style: const TextStyle(fontSize: 12, color: Colors.blueGrey)),
+            ],
+            const SizedBox(height: 8),
+            OutlinedButton(
+              onPressed: () => m.sendLicenseQuery(),
+              child: const Text('刷新状态'),
+            ),
             const SizedBox(height: 8),
             const Text(
-              '未授权时无法启动绕线。把设备ID发给作者申请许可证，粘贴到上面激活。',
+              '未授权时无法启动绕线。填昵称后点「一键申请」自动获取许可证（需设备联网），审核通过后点「查询」取回并激活。',
               style: TextStyle(fontSize: 12, color: Colors.grey, height: 1.5),
             ),
           ],

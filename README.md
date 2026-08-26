@@ -8,7 +8,7 @@ ESP32 + 舵机丝杆排线 + 直流电机收线，把散装线材整齐绕到任
 
 ![License](https://img.shields.io/badge/license-PolyForm--NC%20%2B%20CC%20BY--NC-blue)
 ![Platform](https://img.shields.io/badge/platform-ESP32-orange)
-![Status](https://img.shields.io/badge/status-v0.2.2%20stable-brightgreen)
+![Status](https://img.shields.io/badge/status-v0.2.5%20stable-brightgreen)
 
 </div>
 
@@ -84,6 +84,7 @@ QQ 交流群：1103884695
 ## 🏗️ 组装
 
 > 详细组装视频可参考原作者 [废改实验室](https://makerworld.com.cn/zh/models/2379707-san-liao-rao-xian-qi-shou-yao-dian-dong) 的教程（电机部分）。
+> 图文安装说明见 [`docs/安装说明.pdf`](docs/安装说明.pdf)。
 
 ### 版本选择
 
@@ -178,7 +179,7 @@ QQ 交流群：1103884695
 
 1. USB 连接 ESP32 到电脑
 2. Chrome/Edge 打开 **[esptool.spacehuhn.com](https://esptool.spacehuhn.com/)** → Connect 选串口
-3. 第一个槽地址改成 **0x0**，选 `iwinder-v0.2.2-full.bin`（合并镜像），其余槽留空 → Flash
+3. 第一个槽地址改成 **0x0**，选 `iWinder_full.bin`（合并镜像），其余槽留空 → Flash
 4. 完成 → 重新上电，ESP32 启动热点 **ESP-Winder**
 
 详细步骤（含增量升级方法）见 [`firmware/README.md`](firmware/README.md)。
@@ -187,7 +188,7 @@ QQ 交流群：1103884695
 
 ```bash
 pip install esptool
-esptool.py --chip esp32 --port 串口号 write_flash 0x0 iwinder-v0.2.2-full.bin
+esptool.py --chip esp32 --port 串口号 write_flash 0x0 iWinder_full.bin
 ```
 
 烧录完成后设备自动启动热点 **ESP-Winder**（串口 115200 可看启动日志）。
@@ -288,14 +289,11 @@ ESP32 上电后会启动 **WiFi 热点（ESP-Winder）**。
 
 ```
 ├── app/            # Flutter 手机 APP（Android）源码
-├── apk/            # 编译好的 APP 安装包
 ├── esp32/          # ESP32 固件外围源码（核心算法闭源，仅供参考）
-├── firmware/       # 编译好的固件二进制（含烧录说明）
-├── 模型/           # 3D 打印模型文件（.3mf / .step）
+├── firmware/       # 编译好的固件二进制与 APP 安装包（含烧录说明）
+├── 模型/           # 3D 打印模型文件（.3mf，源文件为 Fusion 360 格式）
 ├── BOM/            # 硬件采购清单（三个版本）
-└── 设定/           # 开发文档
-    ├── 描述.md     # 完整开发规范（硬件/协议/APP/配置）
-    └── 重构方案.md # WiFi/LEDC 问题修复记录
+└── docs/           # 安装说明等文档
 ```
 
 ---

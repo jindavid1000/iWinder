@@ -234,9 +234,24 @@ class AppModel extends ChangeNotifier {
   String? licenseDeviceId;
   bool licenseOk = false;
   String? licenseExpiry;
+  String? serverLicense;      // 在线申请/查询取得的许可证（自动填入输入框）
+  String? serverLicenseMsg;   // 服务器返回的提示信息
 
   void sendLicenseQuery() => _send({'cmd': 'license'});
   void sendLicenseActivate(String key) => _send({'cmd': 'license', 'key': key});
+  void sendLicenseApply(String name, String contact) =>
+      _send({'cmd': 'license_apply', 'name': name, 'contact': contact});
+  void sendLicenseFetch() => _send({'cmd': 'license_query'});
+
+  // 固件 OTA
+  String? fwCurrent;          // 当前固件版本（状态回报）
+  bool fwUpdateAvailable = false;
+  String? fwLatest;
+  String? fwNotes;
+  String? fwMsg;
+
+  void sendOtaCheck() => _send({'cmd': 'ota_check'});
+  void sendOtaStart() => _send({'cmd': 'ota_start'});
 
   // ===========================================================================
   //  绕线范围联动（消除冗余定义）
@@ -317,6 +332,21 @@ class AppModel extends ChangeNotifier {
           licenseDeviceId = msg['device_id'] as String?;
           licenseOk = msg['licensed'] as bool? ?? false;
           licenseExpiry = msg['expiry'] as String?;
+          break;
+        case 'status':
+          if (msg['fw_version'] != null) fwCurrent = msg['fw_version'] as String;
+          break;
+        case 'license_apply':
+        case 'license_query':
+          serverLicenseMsg = msg['msg'] as String?;
+          serverLicense = msg['license'] as String?;
+          break;
+        case 'ota_check':
+          fwCurrent = msg['current'] as String?;
+          fwUpdateAvailable = msg['update_available'] as bool? ?? false;
+          fwLatest = msg['latest'] as String?;
+          fwNotes = msg['notes'] as String?;
+          fwMsg = msg['msg'] as String?;
           break;
         case 'response':
           // 激活/许可证命令的响应 → 刷新授权状态
