@@ -34,8 +34,11 @@ void onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
 }
 
 static WiFiServer* s_tcpServer = nullptr;
-static WiFiClient  s_tcpClient;
-static String      s_tcpBuffer;
+// 多客户端: APP/Web 调试工具可同时在线，互不顶掉（曾为单客户端，
+// 新连接静默覆盖旧 socket，导致 APP 假连接、状态停止更新）
+#define TCP_MAX_CLIENTS 4
+static WiFiClient  s_tcpClients[TCP_MAX_CLIENTS];
+static String      s_tcpBuffers[TCP_MAX_CLIENTS];
 static bool        s_clientConnected = false;
 static WiFiUDP      s_broadcastUdp;
 static unsigned long s_lastBroadcastMs = 0;
@@ -122,6 +125,9 @@ void Comms::wifiStartAP() {
             s_tcpServer->begin();
             Serial.printf("[WiFi] TCP: %s:%d\n", ip.toString().c_str(), WIFI_TCP_PORT);
         }
+        // AP 模式也开 UDP 发现（连热点的手机能搜到设备，
+        // 且 parsePacket 不会因套接字未初始化而狂报错）
+        s_broadcastUdp.begin(8888);
     }
 }
 
@@ -157,13 +163,15 @@ void Comms::wifiConfigure(const String &ssid, const String &password) {
         // 立即通过 AP 的 TCP 连接回报局域网 IP
         String msg = "{\"type\":\"wifi_status\",\"connected\":true,\"ip\":\"" +
                      staIP + "\",\"ssid\":\"" + ssid + "\"}\n";
-        if (s_tcpClient && s_tcpClient.connected()) {
-            s_tcpClient.print(msg);
-            Serial.println("[WiFi] 已回报局域网 IP 给 APP");
+        for (int i = 0; i < TCP_MAX_CLIENTS; i++) {
+            if (s_tcpClients[i] && s_tcpClients[i].connected()) {
+                s_tcpClients[i].print(msg);
+            }
+        }
+        Serial.println("[WiFi] 已回报局域网 IP 给 APP");
 
         // 启动 UDP 广播，让局域网内其他设备也能发现
         s_broadcastUdp.begin(8888);
-        }
     } else {
         Serial.println("[WiFi] 配网失败，保持 AP+STA 模式");
     }
@@ -185,8 +193,10 @@ String Comms::getWifiSSID() const { return g_state.wifiSSID; }
 
 void Comms::send(const String &msg) {
     String line = msg + "\n";
-    if (s_tcpClient && s_tcpClient.connected()) {
-        s_tcpClient.print(line);
+    for (int i = 0; i < TCP_MAX_CLIENTS; i++) {
+        if (s_tcpClients[i] && s_tcpClients[i].connected()) {
+            s_tcpClients[i].print(line);
+        }
     }
 }
 
@@ -204,31 +214,50 @@ void Comms::update() {
 
     WiFiClient newClient = s_tcpServer->accept();
     if (newClient) {
-        s_tcpClient = newClient;
-        s_clientConnected = true;
-        Serial.printf("[WiFi] TCP 客户端已连接: %s\n", newClient.remoteIP().toString().c_str());
-        s_tcpClient.print("{\"type\":\"response\",\"cmd\":\"connect\",\"ok\":true,\"msg\":\"ESP-Winder ready\"}\n");
+        int slot = -1;
+        for (int i = 0; i < TCP_MAX_CLIENTS; i++) {
+            if (!s_tcpClients[i] || !s_tcpClients[i].connected()) { slot = i; break; }
+        }
+        if (slot >= 0) {
+            s_tcpClients[slot] = newClient;
+            s_tcpBuffers[slot] = "";
+            s_clientConnected = true;
+            Serial.printf("[WiFi] TCP 客户端已连接: %s (槽位 %d)\n",
+                          newClient.remoteIP().toString().c_str(), slot);
+            s_tcpClients[slot].print("{\"type\":\"response\",\"cmd\":\"connect\",\"ok\":true,\"msg\":\"ESP-Winder ready\"}\n");
+        } else {
+            // 满了: 显式关闭，客户端能感知断开并重连
+            newClient.stop();
+            Serial.println("[WiFi] TCP 客户端满，拒绝新连接");
+        }
     }
 
-    if (s_tcpClient && s_tcpClient.connected()) {
-        while (s_tcpClient.available()) {
-            char c = s_tcpClient.read();
-            if (c == '\n') {
-                s_tcpBuffer.trim();
-                if (s_tcpBuffer.length() > 0 && _msgCb) {
-                    _msgCb(s_tcpBuffer);
+    bool anyConnected = false;
+    for (int i = 0; i < TCP_MAX_CLIENTS; i++) {
+        if (s_tcpClients[i] && s_tcpClients[i].connected()) {
+            anyConnected = true;
+            while (s_tcpClients[i].available()) {
+                char c = s_tcpClients[i].read();
+                if (c == '\n') {
+                    s_tcpBuffers[i].trim();
+                    if (s_tcpBuffers[i].length() > 0 && _msgCb) {
+                        _msgCb(s_tcpBuffers[i]);
+                    }
+                    s_tcpBuffers[i] = "";
+                } else if (c != '\r') {
+                    s_tcpBuffers[i] += c;
+                    if (s_tcpBuffers[i].length() > 1024) s_tcpBuffers[i] = "";
                 }
-                s_tcpBuffer = "";
-            } else if (c != '\r') {
-                s_tcpBuffer += c;
-                if (s_tcpBuffer.length() > 1024) s_tcpBuffer = "";
             }
+        } else if (s_tcpClients[i]) {
+            s_tcpClients[i].stop();
+            s_tcpClients[i] = WiFiClient();
+            s_tcpBuffers[i] = "";
         }
-    } else {
-        if (s_clientConnected) {
-            s_clientConnected = false;
-            Serial.println("[WiFi] TCP 客户端断开");
-        }
+    }
+    if (!anyConnected && s_clientConnected) {
+        s_clientConnected = false;
+        Serial.println("[WiFi] TCP 客户端全部断开");
     }
 
     // 周期 UDP 广播设备信息（仅 STA 连上家庭 WiFi 时）
@@ -263,7 +292,10 @@ void Comms::update() {
 }
 
 CommLink Comms::activeLink() {
-    bool wifi = isWifiConnected() && s_tcpClient && s_tcpClient.connected();
+    bool anyCli = false;
+    for (int i = 0; i < TCP_MAX_CLIENTS; i++)
+        if (s_tcpClients[i] && s_tcpClients[i].connected()) { anyCli = true; break; }
+    bool wifi = isWifiConnected() && anyCli;
     if (wifi) return LINK_WIFI;
     return LINK_NONE;
 }
