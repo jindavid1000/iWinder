@@ -4,6 +4,8 @@
 #include "winder.h"
 #include "state.h"
 #include "config.h"
+#include "license.h"
+#include "ota.h"
 #include <WiFi.h>
 
 #include <ArduinoJson.h>
@@ -201,6 +203,16 @@ void Protocol::handle(const String &line) {
         cmdClearError();
     } else if (cmd == "factory_reset") {
         cmdFactoryReset();
+    } else if (cmd == "license") {
+        cmdLicense(doc["key"] | "");
+    } else if (cmd == "license_apply") {
+        cmdLicenseApply(doc["name"] | "", doc["contact"] | "");
+    } else if (cmd == "license_query") {
+        cmdLicenseQuery();
+    } else if (cmd == "ota_check") {
+        cmdOtaCheck();
+    } else if (cmd == "ota_start") {
+        cmdOtaStart();
     } else if (cmd == "calibrate_servo") {
         cmdCalibrateServo();
     } else {
@@ -211,6 +223,11 @@ void Protocol::handle(const String &line) {
 // --- 各命令 ---
 
 void Protocol::cmdStart(int speed) {
+    if (!License::ok()) {
+        sendResponse("start", false,
+            "设备未授权。请在 Web 界面\"授权\"页查看设备ID并申请许可证。");
+        return;
+    }
     g_winder.startTask(speed);
     sendResponse("start", true);
 }
@@ -226,8 +243,75 @@ void Protocol::cmdPause() {
 }
 
 void Protocol::cmdResume() {
+    if (!License::ok()) {
+        sendResponse("resume", false, "设备未授权，无法恢复运行。");
+        return;
+    }
     g_winder.resumeTask();
     sendResponse("resume", true);
+}
+
+void Protocol::cmdLicense(const String &key) {
+    if (key.length() == 0) {   // 无 key = 查询授权状态
+        // 刷新即同步：先做一次在线心跳，把封禁/解封状态拉到最新再回报
+        License::onlineCheck();
+        JsonDocument doc;
+        doc["type"]      = "license";
+        doc["device_id"] = License::deviceId();
+        doc["licensed"]  = License::ok();
+        doc["expiry"]    = License::expiry();
+        String out;
+        serializeJson(doc, out);
+        g_comms.send(out);
+        return;
+    }
+    String err = License::activate(key);
+    sendResponse("license", err.isEmpty(), err);
+}
+
+void Protocol::cmdLicenseApply(const String &name, const String &contact) {
+    String lic;
+    String err = License::applyOnline(name, contact, lic);
+    JsonDocument doc;
+    doc["type"] = "license_apply";
+    doc["ok"]   = err.isEmpty();
+    doc["msg"]  = err.isEmpty() ? "申请成功，许可证已自动填入，请点击激活" : err;
+    if (lic.length()) doc["license"] = lic;
+    String out; serializeJson(doc, out);
+    g_comms.send(out);
+}
+
+void Protocol::cmdOtaCheck() {
+    String ver, notes, err;
+    bool has = Ota::checkUpdate(ver, notes, err);
+    JsonDocument doc;
+    doc["type"]    = "ota_check";
+    doc["ok"]      = true;
+    doc["current"] = Ota::currentVersion();
+    doc["update_available"] = has;
+    if (has) { doc["latest"] = ver; doc["notes"] = notes; }
+    else     { doc["msg"] = err.isEmpty() ? Ota::lastMsg() : err; }
+    String out; serializeJson(doc, out);
+    g_comms.send(out);
+}
+
+void Protocol::cmdOtaStart() {
+    sendResponse("ota_start", true, "开始下载固件，完成后自动重启");
+    delay(500);                 // 先把响应发出去
+    String err = Ota::startUpdate();
+    if (err.length()) sendResponse("ota_start", false, err);
+}
+
+void Protocol::cmdLicenseQuery() {
+    String lic;
+    String err = License::queryOnline(lic);
+    JsonDocument doc;
+    doc["type"] = "license_query";
+    doc["ok"]   = err.isEmpty();
+    doc["msg"]  = err;
+    if (lic.length()) doc["license"] = lic;
+    String out; serializeJson(doc, out);
+    g_comms.send(out);
 }
 
 void Protocol::cmdHome() {
@@ -288,6 +372,13 @@ String Protocol::buildStatusJson() {
     doc["calib_countdown"]    = g_state.calibCountdown;
     doc["link"]               = linkName(g_comms.activeLink());
     doc["uptime"]             = g_state.uptimeSec;
+    doc["device_id"]          = License::deviceId();
+    doc["licensed"]           = License::ok();
+    doc["expiry"]             = License::expiry();
+    doc["srv_license"]        = License::srvLicense();
+    doc["fw_version"]         = Ota::currentVersion();
+    doc["ota_msg"]            = Ota::lastMsg();
+    doc["ota_seq"]            = Ota::checkSeq();
 
     if (g_state.state == STATE_ERROR) {
         doc["error_code"] = errorName(g_state.errorCode);

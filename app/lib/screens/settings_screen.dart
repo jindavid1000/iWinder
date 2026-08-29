@@ -260,12 +260,12 @@ class _FirmwareSection extends StatelessWidget {
             Row(children: [
               const Expanded(child: Text('固件升级',
                   style: TextStyle(fontWeight: FontWeight.bold))),
-              Icon(m.fwUpdateAvailable ? Icons.system_update_alt : Icons.check_circle_outline,
-                  color: m.fwUpdateAvailable ? Colors.orange : Colors.green, size: 20),
+              Icon(m.fwChecking ? Icons.sync : (m.fwUpdateAvailable ? Icons.system_update_alt : Icons.check_circle_outline),
+                  color: m.fwChecking ? Colors.blue : (m.fwUpdateAvailable ? Colors.orange : Colors.green), size: 20),
               const SizedBox(width: 4),
-              Text(m.fwUpdateAvailable ? '有新版本' : '最新',
+              Text(m.fwChecking ? '检查中…' : (m.fwUpdateAvailable ? '有新版本' : '最新'),
                   style: TextStyle(
-                      color: m.fwUpdateAvailable ? Colors.orange : Colors.green,
+                      color: m.fwChecking ? Colors.blue : (m.fwUpdateAvailable ? Colors.orange : Colors.green),
                       fontWeight: FontWeight.bold)),
             ]),
             const SizedBox(height: 8),
@@ -283,13 +283,15 @@ class _FirmwareSection extends StatelessWidget {
             const SizedBox(height: 10),
             Row(children: [
               OutlinedButton(
-                onPressed: () {
-                  model.sendOtaCheck();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('正在检查更新…')),
-                  );
-                },
-                child: const Text('检查更新'),
+                onPressed: m.fwChecking
+                    ? null
+                    : () {
+                        model.sendOtaCheck();
+                      },
+                child: m.fwChecking
+                    ? const SizedBox(width: 16, height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Text('检查更新'),
               ),
               const SizedBox(width: 8),
               FilledButton(

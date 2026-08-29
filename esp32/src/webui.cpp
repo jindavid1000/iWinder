@@ -81,6 +81,7 @@ font-style:normal;font-size:11px;color:#fff;text-shadow:0 1px 2px #000a}
 <div class="tabs">
 <button id="tabCtl" class="on" onclick="tab(0)">控制</button>
 <button id="tabPrm" onclick="tab(1)">参数</button>
+<button id="tabLic" onclick="tab(2)">授权</button>
 </div>
 
 <div id="pageCtl">
@@ -168,6 +169,29 @@ onchange="$('p_traverseLeftStart').readOnly=!this.checked;syncLeftHint()"></div>
 <div class="tip">标定需在待机状态进行；装了 AS5600 会同时标定编码器每圈位移。</div>
 </div>
 
+<div id="pageLic" style="display:none">
+<div class="card">
+<h3>设备授权</h3>
+<div class="kv"><i>授权状态</i><b id="licState">--</b></div>
+<div class="kv"><i>设备ID</i><b id="licDev">--</b></div>
+<div class="kv"><i>有效期至</i><b id="licExp">--</b></div>
+<div class="tip">未授权时无法启动绕线。把设备ID发给作者申请许可证，粘贴到下面激活。</div>
+<input id="licName" placeholder="昵称/QQ号（申请必填）" style="margin-top:8px">
+<input id="licContact" placeholder="联系方式（选填）">
+<textarea id="licKey" placeholder="粘贴许可证，或点右侧申请/查询自动填入" style="width:100%;height:60px"></textarea>
+<div style="display:flex;gap:8px">
+<button class="save" style="flex:2" onclick="doLicense()">激活</button>
+<button class="save" style="flex:1" onclick="doApply()">申请</button>
+<button class="save" style="flex:1" onclick="doFetch()">查询</button>
+</div>
+<div class="tip" id="otaMsg">固件版本 --</div>
+<div style="display:flex;gap:8px;margin-top:6px">
+<button class="save" style="flex:1" id="otaCheckBtn" onclick="otaCmd('ota_check')">检查更新</button>
+<button class="save" style="flex:1" onclick="otaCmd('ota_start')">立即升级</button>
+</div>
+</div>
+</div>
+
 <div class="toast" id="toast"></div>
 <script>
 const $=id=>document.getElementById(id);
@@ -177,8 +201,8 @@ calIntervalRounds:'p_calIntervalRounds',hallSpoolMagnets:'p_hallSpoolMagnets',ha
 traverseEncoder:'p_traverseEncoder',encGearRatio:'p_encGearRatio'};
 let stateName='idle';
 
-function tab(i){tabCtl.classList.toggle('on',i==0);tabPrm.classList.toggle('on',i==1);
-pageCtl.style.display=i==0?'':'none';pagePrm.style.display=i==1?'':'none';}
+function tab(i){tabCtl.classList.toggle('on',i==0);tabPrm.classList.toggle('on',i==1);tabLic.classList.toggle('on',i==2);
+pageCtl.style.display=i==0?'':'none';pagePrm.style.display=i==1?'':'none';pageLic.style.display=i==2?'':'none';}
 
 function toast(t){const e=$('toast');e.textContent=t;e.classList.add('show');
 clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),1800);}
@@ -189,6 +213,26 @@ headers:{'Content-Type':'application/json'},body:JSON.stringify(o)});
 const j=await r.json();if(j.ok===false)toast('失败: '+(j.msg||''));else toast('已发送');
 poll();}catch(e){toast('发送失败');}
 }
+async function doLicense(){const k=$('licKey').value.trim();if(!k){toast('请输入许可证');return;}
+try{const r=await fetch('/api/cmd',{method:'POST',headers:{'Content-Type':'application/json'},
+body:JSON.stringify({cmd:'license',key:k})});const j=await r.json();
+toast('已提交，结果见授权状态');poll();}catch(e){toast('发送失败');}}
+async function otaCmd(c){
+try{await fetch('/api/cmd',{method:'POST',headers:{'Content-Type':'application/json'},
+body:JSON.stringify({cmd:c})});
+if(c=='ota_check'){const b=$('otaCheckBtn');b.disabled=true;b.textContent='检查中…';$('otaMsg').textContent='正在检查更新…（约5-10秒）';window._otaWait=true;
+setTimeout(()=>{b.disabled=false;b.textContent='检查更新';},15000);}
+else toast('开始升级，完成后设备将重启');}
+catch(e){toast('发送失败');}}
+async function doApply(){const n=$('licName').value.trim();
+if(!n){toast('请先填写昵称');return;}
+try{await fetch('/api/cmd',{method:'POST',headers:{'Content-Type':'application/json'},
+body:JSON.stringify({cmd:'license_apply',name:n,contact:$('licContact').value.trim()})});
+toast('申请已提交，结果稍后显示');}catch(e){toast('发送失败');}}
+async function doFetch(){
+try{await fetch('/api/cmd',{method:'POST',headers:{'Content-Type':'application/json'},
+body:JSON.stringify({cmd:'license_query'})});
+toast('查询已提交，结果稍后显示');}catch(e){toast('发送失败');}}
 function doStart(){cmd({cmd:'start',speed:manualMode?0:+$('spd').value});}
 
 // 绕线范围联动: 左起始 = 右终止 − 料盘宽度（右基准模型，消除冗余定义）
@@ -220,7 +264,13 @@ calibrating:'校准中',error:'异常',completed:'已完成',servo_calib:'舵机
 
 async function poll(){
 try{
-const r=await fetch('/api/status');const s=await r.json();
+const r=await fetch('/api/status',{cache:'no-store'});const s=await r.json();
+render(s);}catch(e){
+await new Promise(rs=>setTimeout(rs,300));
+try{const r2=await fetch('/api/status',{cache:'no-store'});render(await r2.json());}catch(e2){
+$('stateTxt').textContent='连接断开';$('dot').className='dot';}}}
+
+function render(s){
 stateName=s.state;
 manualMode=(s.drive_mode==1);
 $('speedCard').style.display=manualMode?'none':'';
@@ -242,11 +292,16 @@ $('posTxt').textContent=s.traverse_pos.toFixed(1)+' / '+(manualMode?'':'')+'mm '
 const eb=$('errbox');
 if(s.state=='error'){eb.style.display='block';$('errcode').textContent='['+s.error_code+']';
 $('errmsg').textContent=s.error_msg||'';}else eb.style.display='none';
-$('bStart').disabled=!(stateName=='idle'||stateName=='completed');
+if(window._otaWait&&s.ota_seq!==undefined&&s.ota_seq!=window._otaSeq){window._otaWait=false;const b=$('otaCheckBtn');b.disabled=false;b.textContent='检查更新';}
+if(!window._otaWait&&s.fw_version){if(s.ota_seq!==undefined)window._otaSeq=s.ota_seq;$('otaMsg').textContent='固件版本 v'+s.fw_version+(s.ota_msg?(' · '+s.ota_msg):'');}
+if(s.srv_license&&!$('licKey').value){$('licKey').value=s.srv_license;toast('许可证已自动填入，请点击激活');}
+if(s.device_id){$('licDev').textContent=s.device_id;
+$('licState').textContent=s.licensed?'已授权':'未授权';
+$('licExp').textContent=s.licensed?(s.expiry||'长期'):'--';}
+$('bStart').disabled=!(stateName=='idle'||stateName=='completed')||s.licensed===false;
 $('bPause').disabled=stateName!='running';
 $('bResume').disabled=stateName!='paused';
 $('bStop').disabled=(stateName=='idle'||stateName=='completed');
-}catch(e){$('stateTxt').textContent='连接断开';$('dot').className='dot';}
 }
 
 async function loadParams(){
@@ -273,14 +328,17 @@ loadParams();poll();setInterval(poll,500);
 // ============================================================================
 
 static void handleIndex() {
+    s_server.sendHeader("Cache-Control", "no-store");   // 页面随固件更新，禁止浏览器缓存
     s_server.send_P(200, "text/html", INDEX_HTML);
 }
 
 static void handleStatus() {
+    s_server.sendHeader("Cache-Control", "no-store");
     s_server.send(200, "application/json", g_protocol.buildStatusJson());
 }
 
 static void handleParams() {
+    s_server.sendHeader("Cache-Control", "no-store");
     s_server.send(200, "application/json", getConfigJson(g_config));
 }
 

@@ -249,8 +249,21 @@ class AppModel extends ChangeNotifier {
   String? fwLatest;
   String? fwNotes;
   String? fwMsg;
+  bool fwChecking = false;    // 检查中（HTTPS 较慢，按钮需禁用并提示）
 
-  void sendOtaCheck() => _send({'cmd': 'ota_check'});
+  void sendOtaCheck() {
+    fwChecking = true;
+    notifyListeners();
+    _send({'cmd': 'ota_check'});
+    // 兜底: 设备 HTTPS 检查偶发超时无回复，15 秒后自动恢复按钮
+    Future.delayed(const Duration(seconds: 15), () {
+      if (fwChecking) {
+        fwChecking = false;
+        if (fwMsg == null || fwMsg!.isEmpty) fwMsg = '检查超时，请重试';
+        notifyListeners();
+      }
+    });
+  }
   void sendOtaStart() => _send({'cmd': 'ota_start'});
 
   // ===========================================================================
@@ -342,6 +355,7 @@ class AppModel extends ChangeNotifier {
           serverLicense = msg['license'] as String?;
           break;
         case 'ota_check':
+          fwChecking = false;
           fwCurrent = msg['current'] as String?;
           fwUpdateAvailable = msg['update_available'] as bool? ?? false;
           fwLatest = msg['latest'] as String?;
