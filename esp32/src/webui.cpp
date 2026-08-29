@@ -180,9 +180,9 @@ onchange="$('p_traverseLeftStart').readOnly=!this.checked;syncLeftHint()"></div>
 <input id="licContact" placeholder="联系方式（选填）">
 <textarea id="licKey" placeholder="粘贴许可证，或点右侧申请/查询自动填入" style="width:100%;height:60px"></textarea>
 <div style="display:flex;gap:8px">
-<button class="save" style="flex:2" onclick="doLicense()">激活</button>
-<button class="save" style="flex:1" onclick="doApply()">申请</button>
-<button class="save" style="flex:1" onclick="doFetch()">查询</button>
+<button class="save" style="flex:2" id="licBtn" onclick="doLicense()">激活</button>
+<button class="save" style="flex:1" id="applyBtn" onclick="doApply()">申请</button>
+<button class="save" style="flex:1" id="fetchBtn" onclick="doFetch()">查询</button>
 </div>
 <div class="tip" id="otaMsg">固件版本 --</div>
 <div style="display:flex;gap:8px;margin-top:6px">
@@ -213,7 +213,10 @@ headers:{'Content-Type':'application/json'},body:JSON.stringify(o)});
 const j=await r.json();if(j.ok===false)toast('失败: '+(j.msg||''));else toast('已发送');
 poll();}catch(e){toast('发送失败');}
 }
+function busyBtn(id,txt){const b=$(id);const o=b.textContent;b.disabled=true;b.textContent=txt;b.dataset.o=o;
+setTimeout(()=>{b.disabled=false;b.textContent=b.dataset.o;},12000);}
 async function doLicense(){const k=$('licKey').value.trim();if(!k){toast('请输入许可证');return;}
+busyBtn('licBtn','激活中…');
 try{const r=await fetch('/api/cmd',{method:'POST',headers:{'Content-Type':'application/json'},
 body:JSON.stringify({cmd:'license',key:k})});const j=await r.json();
 toast('已提交，结果见授权状态');poll();}catch(e){toast('发送失败');}}
@@ -228,11 +231,11 @@ async function doApply(){const n=$('licName').value.trim();
 if(!n){toast('请先填写昵称');return;}
 try{await fetch('/api/cmd',{method:'POST',headers:{'Content-Type':'application/json'},
 body:JSON.stringify({cmd:'license_apply',name:n,contact:$('licContact').value.trim()})});
-toast('申请已提交，结果稍后显示');}catch(e){toast('发送失败');}}
+busyBtn('applyBtn','申请中…');toast('申请已提交，结果稍后显示');}catch(e){toast('发送失败');}}
 async function doFetch(){
 try{await fetch('/api/cmd',{method:'POST',headers:{'Content-Type':'application/json'},
 body:JSON.stringify({cmd:'license_query'})});
-toast('查询已提交，结果稍后显示');}catch(e){toast('发送失败');}}
+busyBtn('fetchBtn','查询中…');toast('查询已提交，结果稍后显示');}catch(e){toast('发送失败');}}
 function doStart(){cmd({cmd:'start',speed:manualMode?0:+$('spd').value});}
 
 // 绕线范围联动: 左起始 = 右终止 − 料盘宽度（右基准模型，消除冗余定义）
