@@ -8,7 +8,7 @@ ESP32 + 舵机丝杆排线 + 直流电机收线，把散装线材整齐绕到任
 
 ![License](https://img.shields.io/badge/license-PolyForm--NC%20%2B%20CC%20BY--NC-blue)
 ![Platform](https://img.shields.io/badge/platform-ESP32-orange)
-![Status](https://img.shields.io/badge/status-v0.2.8%20stable-brightgreen)
+![Status](https://img.shields.io/badge/status-v0.2.9%20stable-brightgreen)
 
 </div>
 
