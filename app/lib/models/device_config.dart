@@ -68,8 +68,8 @@ class DeviceConfig {
   DeviceConfig({
     this.pinMotorPwm = 4,
     this.pinServoPwm = 5,
-    this.pinEndstop = 32,
-    this.pinEndstopRight = 14,
+    this.pinEndstop = 14,
+    this.pinEndstopRight = 32,
     this.pinHallSpool = 27,
     this.hallSpoolMagnets = 8,
     this.hallDebounceUs = 25000,
@@ -118,8 +118,8 @@ class DeviceConfig {
     final c = DeviceConfig();
     c.pinMotorPwm = _i(m, 'pinMotorPwm', 4);
     c.pinServoPwm = _i(m, 'pinServoPwm', 5);
-    c.pinEndstop = _i(m, 'pinEndstop', 32);
-    c.pinEndstopRight = _i(m, 'pinEndstopRight', 14);
+    c.pinEndstop = _i(m, 'pinEndstop', 14);
+    c.pinEndstopRight = _i(m, 'pinEndstopRight', 32);
     c.pinHallSpool = _i(m, 'pinHallSpool', 27);
     c.hallSpoolMagnets = _i(m, 'hallSpoolMagnets', 8);
     c.hallDebounceUs = _i(m, 'hallDebounceUs', 25000);

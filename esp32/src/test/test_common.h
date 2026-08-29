@@ -5,8 +5,8 @@
 #define PIN_LED          2
 #define PIN_MOTOR_PWM    4
 #define PIN_SERVO_PWM    5
-#define PIN_ENDSTOP      32
-#define PIN_ENDSTOP_RIGHT 14
+#define PIN_ENDSTOP      14
+#define PIN_ENDSTOP_RIGHT 32
 #define PIN_HALL_SPOOL   27
 
 inline void ledOn()  { pinMode(PIN_LED, OUTPUT); digitalWrite(PIN_LED, HIGH); }

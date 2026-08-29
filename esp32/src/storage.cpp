@@ -29,13 +29,25 @@ void Storage::loadConfig(DeviceConfig &cfg) {
     size_t len = prefs.getBytesLength(K_CFG);
     if (len == sizeof(DeviceConfig)) {
         prefs.getBytes(K_CFG, &cfg, sizeof(DeviceConfig));
-        // 一次性迁移: 行程修正 64→59（实测触发间距 58.8mm，原 64 为含回弹的过测量）
+        // 一次性迁移: 行程修正 59/56 → 62/62（绕满 60mm 料盘）
+        if (!prefs.getBool("rngDef3", false)) {
+            prefs.putBool("rngDef3", true);
+            if (cfg.travelRangeMm == 59.0f || cfg.traverseRightEnd == 56.0f) {
+                cfg.travelRangeMm    = 62.0f;
+                cfg.traverseRightEnd = 62.0f;
+                prefs.end();
+                saveConfig(cfg);
+                Serial.println("[Storage] 已迁移行程参数: 限位间距 59→62mm，右换向 56→62mm");
+                return;
+            }
+        }
+        // 一次性迁移: 行程修正 64→59（历史路径，跳过老版本的用户走这条）
         if (cfg.travelRangeMm == 64.0f && cfg.traverseRightEnd == 62.0f) {
-            cfg.travelRangeMm    = 59.0f;
-            cfg.traverseRightEnd = 56.0f;
+            cfg.travelRangeMm    = 62.0f;
+            cfg.traverseRightEnd = 62.0f;
             prefs.end();
             saveConfig(cfg);
-            Serial.println("[Storage] 已迁移行程参数: 限位间距 64→59mm，右换向 62→56mm");
+            Serial.println("[Storage] 已迁移行程参数: 限位间距 64→62mm，右换向 62 保持");
             return;
         }
         // 一次性迁移: 左起始 12→2（整机右移 10mm，料盘左法兰对齐坐标 2）
@@ -77,7 +89,7 @@ void Storage::loadConfig(DeviceConfig &cfg) {
             Serial.println("[Storage] 已迁移行程参数: 限位间距 70→64mm，右换向 68→62mm");
             return;
         }
-        // 迁移: 左右限位引脚互换（2026-08 接线对调）
+        // 迁移: 左右限位引脚复原（历史上曾误标为 左=32/右=14，统一回 左=14/右=32）
         if (cfg.pinEndstop == 32 && cfg.pinEndstopRight == 14) {
             cfg.pinEndstop = 14;
             cfg.pinEndstopRight = 32;

@@ -11,6 +11,7 @@
 #include "winder.h"
 #include "webui.h"
 #include "led.h"
+#include "license.h"
 #include <WiFi.h>
 
 void setup() {
@@ -23,6 +24,7 @@ void setup() {
 
     // 1. 配置（纯 NVS，不碰外设）
     Serial.println("[Main] 1/5 加载配置");
+    License::begin();
     g_storage.begin();
     g_storage.loadConfig(g_config);
     Serial.printf("[Main] 线径=%.2fmm 料盘宽=%.1fmm\n",
@@ -47,12 +49,25 @@ void setup() {
     // 5. Web 界面（WiFi 就绪后即可服务）
     Serial.println("[Main] 5/5 启动 Web 界面");
     g_webui.begin();
+
+    License::onlineCheck();   // 联网心跳（阻塞可达数秒，必须在启动回原点之前完成，
+                              // 否则 setup 卡在网络请求时小车已顶死限位而无法停车）
     g_winder.goHome();
 
     Serial.println("[Main] 初始化完成\n");
 }
 
+static uint32_t s_lastCheckMs = 0;
 void loop() {
+    // 在线心跳：联网前每 30 秒重试，连上后每小时一次
+    // （开机时 WiFi 往往还没就绪，只查一次会漏掉封禁状态刷新）
+    static uint32_t s_failCount = 0;
+    // 常规 1 小时一次；联网失败时 30 秒重试直到成功（保证封禁状态最终同步）
+    const uint32_t interval = s_failCount > 0 ? 30UL * 1000UL : 3600UL * 1000UL;
+    if (millis() - s_lastCheckMs > interval) {
+        s_lastCheckMs = millis();
+        s_failCount = License::onlineCheck() ? 0 : s_failCount + 1;
+    }
     g_winder.update();
     g_comms.update();
     g_webui.update();

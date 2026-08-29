@@ -8,7 +8,7 @@ ESP32 + 舵机丝杆排线 + 直流电机收线，把散装线材整齐绕到任
 
 ![License](https://img.shields.io/badge/license-PolyForm--NC%20%2B%20CC%20BY--NC-blue)
 ![Platform](https://img.shields.io/badge/platform-ESP32-orange)
-![Status](https://img.shields.io/badge/status-v0.2.5%20stable-brightgreen)
+![Status](https://img.shields.io/badge/status-v0.2.8%20stable-brightgreen)
 
 </div>
 
@@ -135,8 +135,8 @@ QQ 交流群：1103884695
 |-----------|------|
 | GPIO 4 | 电机驱动：MOS 方案接栅极（经 150Ω），L298N 方案接 IN1 |
 | GPIO 5 | 舵机 PWM 信号线 |
-| GPIO 14 | Endstop 左（原点校准）信号 |
-| GPIO 32 | Endstop 右（硬限位保护）信号 |
+| GPIO 14 | Endstop 左（绕线起始侧）信号 |
+| GPIO 32 | Endstop 右（**原点侧**，上电寻原点时小车停靠的一侧）信号 |
 | GPIO 27 | 霍尔传感器信号 |
 | GPIO 21 | AS5600 编码器 SDA（可选） |
 | GPIO 22 | AS5600 编码器 SCL（可选） |
@@ -161,6 +161,11 @@ QQ 交流群：1103884695
 > 剩余超程作为寻原位停止冲量的缓冲。两个限位触发点之间的真实距离用 `test_encoder`
 > 测出（小结行会打印），填入「限位间距」参数——限位绝对装在哪不重要，重复性才重要。
 > 引脚全部可在 `esp32/include/config.h` 中修改，也可通过 APP 运行时调整。
+> ⚠️ **限位左右别接反**：以功能区分——**右限位是原点侧**（上电后小车寻原点时向右顶到的那个），
+> 左限位是绕线起始侧。接反的典型表现：上电寻原点显示「右原点已确认」，随后定位立刻报
+> `sensor_error - 定位顶左限位且偏差>3mm`，且串口 `[POS]` 行末尾**同时**出现 `[左限位] [右限位]`。
+> 修法：对调 GPIO 14 / GPIO 32 两根信号线，或在 APP 设置页把两个限位引脚值互换。
+> 接好后可用 `pio run -e test_endstop -t upload` 分别按压两个摆杆验证左右一一对应。
 
 ### 3D 打印
 
